@@ -1,4 +1,4 @@
-package Domain
+package Models
 
 type Post struct {
 }
