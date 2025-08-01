@@ -1,4 +1,4 @@
-package Models
+package entities
 
 type Post struct {
 }
