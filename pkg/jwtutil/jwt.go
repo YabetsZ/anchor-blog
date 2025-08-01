@@ -1,7 +1,7 @@
 package jwtutil
 
 import (
-	Models "anchor-blog/internal/domain/models"
+	"anchor-blog/internal/domain/entities"
 	"anchor-blog/internal/errors"
 	"log"
 	"time"
@@ -9,9 +9,9 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func GenerateAccessToken(user *Models.User, secret string) (string, error) {
-	claims := Models.CustomClaims{
-		UserID:   user.ID.Hex(),
+func GenerateAccessToken(user *entities.User, secret string) (string, error) {
+	claims := entities.CustomClaims{
+		UserID:   user.ID,
 		Username: user.Username,
 		Role:     user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -31,9 +31,9 @@ func GenerateAccessToken(user *Models.User, secret string) (string, error) {
 	return signedToken, nil
 }
 
-func GenerateRefreshToken(user *Models.User, secret string) (string, error) {
-	claims := Models.CustomClaims{
-		UserID:   user.ID.Hex(),
+func GenerateRefreshToken(user *entities.User, secret string) (string, error) {
+	claims := entities.CustomClaims{
+		UserID:   user.ID,
 		Username: user.Username,
 		Role:     user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -53,15 +53,15 @@ func GenerateRefreshToken(user *Models.User, secret string) (string, error) {
 	return signedToken, nil
 }
 
-func ValidateToken(tokenString string, secret string) (*Models.CustomClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &Models.CustomClaims{}, func(token *jwt.Token) (any, error) {
+func ValidateToken(tokenString string, secret string) (*entities.CustomClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &entities.CustomClaims{}, func(token *jwt.Token) (any, error) {
 		return secret, nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	claims, ok := token.Claims.(*Models.CustomClaims)
+	claims, ok := token.Claims.(*entities.CustomClaims)
 	if !ok || !token.Valid {
 		return nil, errors.ErrInvalidToken
 	}

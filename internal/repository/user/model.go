@@ -1,14 +1,42 @@
-package mapper
+package repository
 
 import (
-	entities "anchor-blog/internal/domain/entities"
-	"anchor-blog/internal/dto"
-	"anchor-blog/internal/infra/models"
+	"anchor-blog/internal/domain/entities"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func ModelToEntity(model models.User) entities.User {
+type SocialLink struct {
+	Platform string `bson:"platform"`
+	URL      string `bson:"url"`
+}
+
+type UserProfile struct {
+	Bio        string       `bson:"bio"`
+	PictureURL string       `bson:"picture_url"`
+	SocialLink []SocialLink `bson:"social_links"`
+}
+
+type User struct {
+	ID           primitive.ObjectID   `bson:"_id,omitempty"`
+	Username     string               `bson:"username"`
+	FirstName    string               `bson:"first_name"`
+	LastName     string               `bson:"last_name"`
+	Email        string               `bson:"email"`
+	PasswordHash string               `bson:"password_hash"`
+	Role         string               `bson:"role"`
+	Activated    bool                 `bson:"activated"`
+	LastSeen     time.Time            `bson:"last_seen"`
+	Profile      UserProfile          `bson:"profile"`
+	UpdatedBy    primitive.ObjectID   `bson:"updated_by"`
+	CreatedAt    time.Time            `bson:"created_at"`
+	UpdatedAt    time.Time            `bson:"updated_at"`
+	UserPosts    []primitive.ObjectID `bson:"user_posts"`
+}
+
+// :::::::::   Mapping functions   :::::::::::::::
+func ModelToEntity(model User) entities.User {
 	socialLinks := make([]entities.SocialLink, len(model.Profile.SocialLink))
 
 	for index, socialLink := range model.Profile.SocialLink {
@@ -42,28 +70,28 @@ func ModelToEntity(model models.User) entities.User {
 	}
 }
 
-func EntityToModel(ue entities.User) (models.User, error) {
+func EntityToModel(ue entities.User) (User, error) {
 	id, err := primitive.ObjectIDFromHex(ue.ID)
 	if err != nil {
-		return models.User{}, err
+		return User{}, err
 	}
 	updatedBy, err := primitive.ObjectIDFromHex(ue.UpdatedBy)
 	if err != nil {
-		return models.User{}, nil
+		return User{}, nil
 	}
 
 	userPosts := make([]primitive.ObjectID, len(ue.UserPosts))
 	for index, post := range ue.UserPosts {
 		userPosts[index], err = primitive.ObjectIDFromHex(post)
 		if err != nil {
-			return models.User{}, nil
+			return User{}, nil
 		}
 	}
-	socialLinks := make([]models.SocialLink, len(ue.Profile.SocialLinks))
+	socialLinks := make([]SocialLink, len(ue.Profile.SocialLinks))
 	for index, socialLink := range ue.Profile.SocialLinks {
-		socialLinks[index] = models.SocialLink{Platform: socialLink.Platform, URL: socialLink.URL}
+		socialLinks[index] = SocialLink{Platform: socialLink.Platform, URL: socialLink.URL}
 	}
-	return models.User{
+	return User{
 		ID:           id,
 		Username:     ue.Username,
 		FirstName:    ue.FirstName,
@@ -77,38 +105,10 @@ func EntityToModel(ue entities.User) (models.User, error) {
 		UpdatedAt:    ue.UpdatedAt,
 		UpdatedBy:    updatedBy,
 		UserPosts:    userPosts,
-		Profile: models.UserProfile{
+		Profile: UserProfile{
 			Bio:        ue.Profile.Bio,
 			PictureURL: ue.Profile.PictureURL,
 			SocialLink: socialLinks,
 		},
 	}, nil
-}
-
-func EntityToDTO(ue entities.User) dto.UserDTO {
-	socialLinks := make([]dto.SocialLinkDTO, len(ue.Profile.SocialLinks))
-
-	for index, socialLink := range ue.Profile.SocialLinks {
-		socialLinks[index] = dto.SocialLinkDTO{Platform: socialLink.Platform, URL: socialLink.URL}
-	}
-
-	return dto.UserDTO{
-		ID:        ue.ID,
-		Username:  ue.Username,
-		FirstName: ue.FirstName,
-		LastName:  ue.LastName,
-		Email:     ue.Email,
-		Role:      ue.Role,
-		Activated: ue.Activated,
-		LastSeen:  ue.LastSeen,
-		CreatedAt: ue.CreatedAt,
-		UpdatedBy: ue.UpdatedBy,
-		UpdatedAt: ue.UpdatedAt,
-		UserPosts: ue.UserPosts,
-		Profile: dto.UserProfileDTO{
-			Bio:         ue.Profile.Bio,
-			PictureURL:  ue.Profile.PictureURL,
-			SocialLinks: socialLinks,
-		},
-	}
 }
