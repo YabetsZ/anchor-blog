@@ -1,4 +1,4 @@
-package service
+package userservice
 
 import (
 	"anchor-blog/internal/domain/entities"

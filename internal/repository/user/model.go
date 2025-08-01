@@ -1,4 +1,4 @@
-package repository
+package userrepo
 
 import (
 	"anchor-blog/internal/domain/entities"
