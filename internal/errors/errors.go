@@ -11,4 +11,5 @@ var (
 	ErrForbidden          = errors.New("forbidden action")
 	ErrValidationFailed   = errors.New("validation failed")
 	ErrInternalServer     = errors.New("internal server error")
+	ErrInvalidToken       = errors.New("invalid token")
 )
