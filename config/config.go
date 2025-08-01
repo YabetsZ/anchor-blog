@@ -13,6 +13,11 @@ type Config struct {
 		URI      string `mapstructure:"uri"`
 		Database string `mapstructure:"database"`
 	} `mapstructure:"mongo"`
+
+	JWT struct {
+		AccessTokenSecret  string `mapstructure:"access_token_secret"`
+		RefreshTokenSecret string `mapstructure:"refresh_token_secret"`
+	} `mapstructure:"jwt"`
 }
 
 func LoadConfig(path string) (*Config, error) {
