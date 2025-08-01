@@ -26,7 +26,7 @@ type User struct {
 	Activated    bool
 	LastSeen     time.Time
 	Profile      UserProfile
-	UpdatedBy    string
+	UpdatedBy    string // This should be for who changed the role
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	UserPosts    []string

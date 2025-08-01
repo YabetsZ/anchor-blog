@@ -32,7 +32,7 @@ type UserDTO struct {
 	UserPosts []string       `json:"user_posts"`
 }
 
-// :::::::::  Mapper functions  ::::::::::
+// :::::::::  Mapping functions  ::::::::::
 func EntityToDTO(ue entities.User) UserDTO {
 	socialLinks := make([]SocialLinkDTO, len(ue.Profile.SocialLinks))
 
