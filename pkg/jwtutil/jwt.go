@@ -9,13 +9,18 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+const (
+	RefreshTokenDuration = time.Hour * 24 * 7
+	AccessTokenDuration  = time.Hour * 1
+)
+
 func GenerateAccessToken(user *entities.User, secret string) (string, error) {
 	claims := entities.CustomClaims{
 		UserID:   user.ID,
 		Username: user.Username,
 		Role:     user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 2)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(AccessTokenDuration)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 		},
@@ -37,7 +42,7 @@ func GenerateRefreshToken(user *entities.User, secret string) (string, error) {
 		Username: user.Username,
 		Role:     user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(RefreshTokenDuration)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 		},
