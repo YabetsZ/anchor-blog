@@ -29,5 +29,5 @@ type User struct {
 	UpdatedBy    string // This should be for who changed the role
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
-	UserPosts    []string
+	UserPosts    []string // this will be depricated
 }
