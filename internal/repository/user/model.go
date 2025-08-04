@@ -36,7 +36,7 @@ type User struct {
 }
 
 // :::::::::   Mapping functions   :::::::::::::::
-func ModelToEntity(model User) entities.User {
+func ModelToEntity(model *User) entities.User {
 	socialLinks := make([]entities.SocialLink, len(model.Profile.SocialLink))
 
 	for index, socialLink := range model.Profile.SocialLink {
@@ -70,7 +70,7 @@ func ModelToEntity(model User) entities.User {
 	}
 }
 
-func EntityToModel(ue entities.User) (User, error) {
+func EntityToModel(ue *entities.User) (User, error) {
 	id, err := primitive.ObjectIDFromHex(ue.ID)
 	if err != nil {
 		return User{}, err

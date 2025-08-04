@@ -52,7 +52,7 @@ func (s *ActivationService) SendActivationEmail(user *entities.User) error {
 func (s *ActivationService) VerifyActivation(token string) (*entities.User, error) {
 	// TODO: Implement token validation with database
 	// For now, return mock validation
-	
+
 	if token == "" {
 		return nil, fmt.Errorf("activation token is required")
 	}

@@ -1,114 +1,135 @@
-# User Repository Interfaces
+# 📦 `userrepo` Package Documentation
 
-## Interface Overview
+## Overview
 
-| Interface               | Responsibility                        |
-| ----------------------- | ------------------------------------- |
-| `IUserReaderRepository` | Read/query operations                 |
-| `IUserWriterRepository` | Write/update/delete operations        |
-| `IUserAuthRepository`   | Authentication-related operations     |
-| `IUserAdminRepository`  | Admin-only operations (roles, status) |
-| `IUserRepository`       | Aggregates all the above interfaces   |
+The `userrepo` package provides a MongoDB-based implementation of the `IUserRepository` interface defined in the `entities` package. It supports all necessary CRUD operations and business logic required to manage user data in a scalable and maintainable way.
+
+This implementation adheres to **Clean Architecture** principles by separating domain logic (`entities`) from infrastructure logic (`userrepo`), ensuring testability and flexibility.
 
 ---
 
-## IUserReaderRepository
+## 🧩 Interface Implementations
 
-Responsible for **read-only** user data operations.
+### 🔍 Read Operations (`IUserReaderRepository`)
 
-```go
-type IUserReaderRepository interface {
-	GetUserByID(ctx context.Context, id primitive.ObjectID) (*User, error)
-	GetUserByEmail(ctx context.Context, email string) (*User, error)
-	GetUserByUsername(ctx context.Context, username string) (*User, error)
-	GetUser(ctx context.Context, filter map[string]interface{}) (*User, error)
-	GetUsers(ctx context.Context, filter map[string]interface{}, limit, offset int) ([]*User, error)
-	CountUsers(ctx context.Context, filter map[string]interface{}) (int64, error)
-	GetInactiveUsers(ctx context.Context) ([]*User, error)
-	SearchUsers(ctx context.Context, keyword string, limit int) ([]*User, error)
-	GetUserPosts(ctx context.Context, userID primitive.ObjectID) ([]*Post, error)
-	GetUserRoleByID(ctx context.Context, userID primitive.ObjectID) (string, error)
-}
-```
+#### `GetUserByID(ctx, id)`
 
-### Parameter Types:
+Fetches a user by MongoDB ObjectID. Returns a domain `*User`.
 
-* `context.Context`: Handles timeout, cancellation, and tracing
-* `primitive.ObjectID`: MongoDB document IDs (user, post)
-* `string`: Email, username, keyword
-* `int`: Pagination (limit, offset)
-* `map[string]interface{}`: Filter for flexible querying
+#### `GetUserByEmail(ctx, email)`
 
----
+Returns a `*User` by email. Useful for authentication or validation.
 
-## IUserWriterRepository
+#### `GetUserByUsername(ctx, username)`
 
-Handles **write** operations related to user persistence.
+Looks up user by username. Validates uniqueness during registration.
 
-```go
-type IUserWriterRepository interface {
-	CreateUser(ctx context.Context, user *User) (primitive.ObjectID, error)
-	UpdateUserByID(ctx context.Context, id primitive.ObjectID, update map[string]interface{}) error
-	DeleteUserByID(ctx context.Context, id primitive.ObjectID) error
-	SetLastSeen(ctx context.Context, id primitive.ObjectID, timestamp int64) error
-}
-```
+#### `GetUsers(ctx, limit, offset)`
 
-### Parameter Types:
+Paginates through users using MongoDB's `Find()` with `limit` and `skip`.
 
-* `*User`: Full user model for creation
-* `map[string]interface{}`: Partial update fields
-* `int64`: UNIX timestamp for last seen tracking
+#### `CountUsersByRole(ctx, role)`
+
+Returns the number of users for a specific role (e.g., "admin", "user").
+
+#### `CountAllUsers(ctx)`
+
+Returns the total number of users in the system.
+
+#### `CountActiveUsers(ctx)`
+
+Returns count of users where `activated == true`.
+
+#### `CountInactiveUsers(ctx)`
+
+Returns count of users where `activated == false`.
+
+#### `GetUserRoleByID(ctx, id)`
+
+Returns the role string of a user by ID.
 
 ---
 
-## IUserAuthRepository
+### 🛠 Write Operations (`IUserWriterRepository`)
 
-Handles user **authentication-related** operations.
+#### `CreateUser(ctx, user)`
 
-```go
-type IUserAuthRepository interface {
-	CheckEmail(ctx context.Context, email string) (bool, error)
-	CheckUsername(ctx context.Context, username string) (bool, error)
-	UpdatePassword(ctx context.Context, id primitive.ObjectID, newHashedPassword string) error
-}
-```
+Converts a domain-level `User` into a MongoDB document and inserts it.
 
-### Parameter Types:
+#### `EditUserByID(ctx, id, user)`
 
-* `string`: Email, username, password hash
-* `primitive.ObjectID`: Target user ID
+Updates user fields only if non-zero values are provided. Uses `$set` to apply changes.
 
----
+#### `DeleteUserByID(ctx, id)`
 
-## IUserAdminRepository
+Removes a user document by its MongoDB ID.
 
-For **admin-level** user role and status control.
+#### `SetLastSeen(ctx, id, timestamp)`
 
-```go
-type IUserAdminRepository interface {
-	SetRole(ctx context.Context, id primitive.ObjectID, role string) error
-	ActivateUserByID(ctx context.Context, id primitive.ObjectID) error
-	DeactivateUserByID(ctx context.Context, id primitive.ObjectID) error
-}
-```
-
-### Parameter Types:
-
-* `string`: Role (e.g. `"user"`, `"admin"`)
-* `primitive.ObjectID`: Target user ID
+Updates a user's `LastSeen` timestamp field.
 
 ---
 
-## IUserRepository
+### 🔐 Auth Operations (`IUserAuthRepository`)
 
-Composite interface combining all user-related operations.
+#### `CheckEmail(ctx, email)`
 
-```go
-type IUserRepository interface {
-	IUserReaderRepository
-	IUserWriterRepository
-	IUserAuthRepository
-	IUserAdminRepository
-}
-```
+Checks if an email is already registered. Returns `true` if exists.
+
+#### `CheckUsername(ctx, username)`
+
+Checks if a username is already taken. Returns `true` if exists.
+
+#### `ChangePassword(ctx, id, newHashedPassword)`
+
+Updates a user's `PasswordHash` field.
+
+#### `ChangeEmail(ctx, email, newEmail)`
+
+Replaces an existing email address with a new one.
+
+---
+
+### 🛡 Admin Operations (`IUserAdminRepository`)
+
+#### `SetRole(ctx, id, role)`
+
+Changes a user's role. E.g., promoting a "user" to "admin".
+
+#### `ActivateUserByID(ctx, id)`
+
+Marks `activated = true` for a user.
+
+#### `DeactivateUserByID(ctx, id)`
+
+Marks `activated = false` for a user.
+
+---
+
+## 🧱 MongoDB Schema Assumptions
+
+Each `User` document is expected to have:
+
+* `_id` as `ObjectID`
+* Fields: `username`, `email`, `passwordHash`, `role`, `activated`, `lastSeen`
+* Embedded `profile` with:
+
+  * `bio`
+  * `pictureURL`
+  * `socialLinks` (slice of `{platform, url}`)
+
+---
+
+## ⚙️ Utility Functions
+
+### `IsUserProfileEmpty(profile UserProfile)`
+
+Checks if the `UserProfile` struct contains any meaningful data. Prevents overwriting with empty values during updates.
+
+---
+
+## 🧪 Error Handling
+
+All errors are logged using `log.Printf` and returned as centralized custom errors from the `internal/errors` package (e.g., `ErrInternalServer`), ensuring consistency in error response and debugging.
+
+---
