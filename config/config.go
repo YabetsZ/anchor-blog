@@ -18,6 +18,10 @@ type Config struct {
 		AccessTokenSecret  string `mapstructure:"access_token_secret"`
 		RefreshTokenSecret string `mapstructure:"refresh_token_secret"`
 	} `mapstructure:"jwt"`
+
+	HMAC struct {
+		Secret string `mapstructure:"hmac_secret"`
+	} `mapstructure:"hmac"`
 }
 
 func LoadConfig(path string) (*Config, error) {
