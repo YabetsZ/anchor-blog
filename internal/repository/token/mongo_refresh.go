@@ -48,7 +48,6 @@ func (mt *mongoTokenRepository) StoreRefreshToken(ctx context.Context, token *en
 	if err != nil {
 		return err
 	}
-
 	_, err = mt.collection.InsertOne(ctx, mToken)
 	if err != nil {
 		log.Println("unexpected error during Insertion: ", err)

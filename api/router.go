@@ -2,7 +2,7 @@ package api
 
 import (
 	"anchor-blog/api/handler"
-  "anchor-blog/api/handler/user"
+	"anchor-blog/api/handler/user"
 
 	"net/http"
 
@@ -39,5 +39,6 @@ func UserRoutes(rg *gin.RouterGroup, handler *user.UserHandler) {
 	// Public routes
 	rg.POST("/login", handler.Login)
 	rg.POST("/refresh", handler.Refresh)
+	rg.POST("/register", handler.Register)
 
 }
