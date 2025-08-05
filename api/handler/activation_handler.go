@@ -1,20 +1,20 @@
 package handler
 
 import (
-	userservice "anchor-blog/internal/service/user"
+	usersvc "anchor-blog/internal/service/user"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 type ActivationHandler struct {
-	activationService *userservice.ActivationService
+	activationService *usersvc.ActivationService
 }
 
 // NewActivationHandler creates a new activation handler
 func NewActivationHandler() *ActivationHandler {
 	return &ActivationHandler{
-		activationService: userservice.NewActivationService(),
+		activationService: usersvc.NewActivationService(),
 	}
 }
 
@@ -33,7 +33,7 @@ func (h *ActivationHandler) ActivateAccount(c *gin.Context) {
 	user, err := h.activationService.VerifyActivation(token)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid or expired activation token",
+			"error":   "Invalid or expired activation token",
 			"details": err.Error(),
 		})
 		return
