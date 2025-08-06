@@ -25,6 +25,13 @@ type Config struct {
 	HMAC struct {
 		Secret string `mapstructure:"hmac_secret"`
 	} `mapstructure:"hmac"`
+
+	GenAI struct {
+		GeminiAPIKey string `mapstructure:"gemini_api_key"`
+		GeminiModel  string `mapstructure:"gemini_model"`
+		MinWords     int    `mapstructure:"min_words"`
+		MaxWords     int    `mapstructure:"max_words"`
+	} `mapstructure:"genai"`
 }
 
 func LoadConfig(path string) (*Config, error) {
