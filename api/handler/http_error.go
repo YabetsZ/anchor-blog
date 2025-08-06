@@ -15,6 +15,7 @@ func HandleHttpError(c *gin.Context, err error) {
 		errors.Is(err, errs.ErrUserNotFound):
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 	case errors.Is(err, errs.ErrInvalidUserID),
+		errors.Is(err, errs.ErrInvalidPostID),
 		errors.Is(err, errs.ErrValidationFailed),
 		errors.Is(err, errs.ErrInvalidToken):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

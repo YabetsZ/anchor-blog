@@ -10,8 +10,11 @@ type Config struct {
 	} `mapstructure:"server"`
 
 	Mongo struct {
-		URI      string `mapstructure:"uri"`
-		Database string `mapstructure:"database"`
+		URI             string `mapstructure:"uri"`
+		Database        string `mapstructure:"database"`
+		UserCollection  string `mapstructure:"user_collection"`
+		TokenCollection string `mapstructure:"token_collection"`
+		PostCollection  string `mapstructure:"post_collection"`
 	} `mapstructure:"mongo"`
 
 	JWT struct {
