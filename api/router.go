@@ -2,14 +2,16 @@ package api
 
 import (
 	"anchor-blog/api/handler"
-  "anchor-blog/api/handler/user"
+	"anchor-blog/api/handler/user"
+	"anchor-blog/api/middleware"
+	"anchor-blog/config"
 
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter() *gin.Engine {
+func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler *handler.PostHandler) *gin.Engine {
 	router := gin.Default()
 
 	// Health check endpoint
@@ -18,9 +20,19 @@ func SetupRouter() *gin.Engine {
 			"status": "OK",
 		})
 	})
-	// g := router.Group("")
-	// userHandler := user.NewUserHandler(usersvc.NewUserServices()) // insert it after segni has done the job
-	// UserRoutes(g, userHandler)
+
+	userGroup := router.Group("/api/v1/user")
+
+	UserRoutes(cfg, userGroup, userHandler)
+
+	v1Auth := router.Group("/api/v1")
+	v1Auth.Use(middleware.AuthMiddleware(cfg.JWT.AccessTokenSecret))
+	{
+		// ... your existing authenticated routes for profile, etc.
+
+		// Post routes
+		v1Auth.POST("/posts", postHandler.Create)
+	}
 
 	// Initialize handlers
 	activationHandler := handler.NewActivationHandler()
@@ -29,15 +41,30 @@ func SetupRouter() *gin.Engine {
 	v1 := router.Group("/api/v1")
 	{
 		// User activation route
-		v1.GET("/users/activate", activationHandler.ActivateAccount)
+		v1.GET("activate", activationHandler.ActivateAccount)
+	}
+
+	// Public routes that don't need auth
+	v1Public := router.Group("/api/v1")
+	{
+		v1Public.GET("/posts/:id", postHandler.GetByID)
+		v1Public.GET("/posts", postHandler.List)
 	}
 
 	return router
 }
 
-func UserRoutes(rg *gin.RouterGroup, handler *user.UserHandler) {
+func UserRoutes(cfg *config.Config, rg *gin.RouterGroup, handler *user.UserHandler) {
 	// Public routes
-	rg.POST("/login", handler.Login)
-	rg.POST("/refresh", handler.Refresh)
+	public := rg.Group("")
+	public.POST("/login", handler.Login)
+	public.POST("/refresh", handler.Refresh)
+
+	private := rg.Group("")
+	private.Use(middleware.AuthMiddleware(cfg.JWT.AccessTokenSecret))
+
+}
+
+func PostRoutes() {
 
 }
