@@ -2,44 +2,46 @@ package entities
 
 import (
 	"context"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
 )
 
 // For Read
 type IUserReaderRepository interface {
-	GetUserByID(ctx context.Context, id primitive.ObjectID) (*User, error)
+	GetUserByID(ctx context.Context, id string) (*User, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByUsername(ctx context.Context, username string) (*User, error)
-	GetUser(ctx context.Context, filter map[string]interface{}) (*User, error)
-	GetUsers(ctx context.Context, filter map[string]interface{}, limit, offset int) ([]*User, error)
-	CountUsers(ctx context.Context, filter map[string]interface{}) (int64, error)
-	GetInactiveUsers(ctx context.Context) ([]*User, error)
-	SearchUsers(ctx context.Context, keyword string, limit int) ([]*User, error)
-	GetUserPosts(ctx context.Context, userID primitive.ObjectID) ([]*Post, error)
-	GetUserRoleByID(ctx context.Context, userID primitive.ObjectID) (string, error)
+	GetUsers(ctx context.Context, limit, offset int64) ([]*User, error)
+	CountUsersByRole(ctx context.Context, role string) (int64, error)
+	CountAllUsers(ctx context.Context) (int64, error)
+	CountActiveUsers(ctx context.Context) (int64, error)
+	CountInactiveUsers(ctx context.Context) (int64, error)
+	// GetInactiveUsers(ctx context.Context) ([]*User, error)
+	// SearchUsers(ctx context.Context, keyword string, limit int) ([]*User, error)
+	// GetUserPosts(ctx context.Context, userID string) ([]*Post, error)
+	GetUserRoleByID(ctx context.Context, userID string) (string, error)
 }
 
 // For Write
 type IUserWriterRepository interface {
-	CreateUser(ctx context.Context, user *User) (primitive.ObjectID, error)
-	UpdateUserByID(ctx context.Context, id primitive.ObjectID, update map[string]interface{}) error
-	DeleteUserByID(ctx context.Context, id primitive.ObjectID) error
-	SetLastSeen(ctx context.Context, id primitive.ObjectID, timestamp int64) error
+	CreateUser(ctx context.Context, user *User) (string, error)
+	EditUserByID(ctx context.Context, id string, user *User) error
+	DeleteUserByID(ctx context.Context, id string) error
+	SetLastSeen(ctx context.Context, id string, timestamp time.Time) error
 }
 
 // For Auth
 type IUserAuthRepository interface {
 	CheckEmail(ctx context.Context, email string) (bool, error)
 	CheckUsername(ctx context.Context, username string) (bool, error)
-	UpdatePassword(ctx context.Context, id primitive.ObjectID, newHashedPassword string) error
+	ChangePassword(ctx context.Context, id string, newHashedPassword string) error
+	ChangeEmail(ctx context.Context, email string, newEmail string) error
 }
 
 // Only for ADMIN
 type IUserAdminRepository interface {
-	SetRole(ctx context.Context, id primitive.ObjectID, role string) error
-	ActivateUserByID(ctx context.Context, id primitive.ObjectID) error
-	DeactivateUserByID(ctx context.Context, id primitive.ObjectID) error
+	SetRole(ctx context.Context, id string, role string) error
+	ActivateUserByID(ctx context.Context, id string) error
+	DeactivateUserByID(ctx context.Context, id string) error
 }
 
 // User Repository

@@ -1,4 +1,4 @@
-package userservice
+package usersvc
 
 import (
 	"anchor-blog/internal/domain/entities"
@@ -23,6 +23,7 @@ type UserDTO struct {
 	LastName  string         `json:"last_name"`
 	Email     string         `json:"email"`
 	Role      string         `json:"role"`
+	Password  string         `json:"-"`
 	Activated bool           `json:"activated"`
 	LastSeen  time.Time      `json:"last_seen"`
 	Profile   UserProfileDTO `json:"profile"`
@@ -56,6 +57,38 @@ func EntityToDTO(ue entities.User) UserDTO {
 		Profile: UserProfileDTO{
 			Bio:         ue.Profile.Bio,
 			PictureURL:  ue.Profile.PictureURL,
+			SocialLinks: socialLinks,
+		},
+	}
+}
+
+func DTOToEntity(dto UserDTO) entities.User {
+	socialLinks := make([]entities.SocialLink, len(dto.Profile.SocialLinks))
+
+	for index, socialLink := range dto.Profile.SocialLinks {
+		socialLinks[index] = entities.SocialLink{
+			Platform: socialLink.Platform,
+			URL:      socialLink.URL,
+		}
+	}
+
+	return entities.User{
+		ID:           dto.ID,
+		Username:     dto.Username,
+		FirstName:    dto.FirstName,
+		LastName:     dto.LastName,
+		Email:        dto.Email,
+		Role:         dto.Role,
+		PasswordHash: dto.Password,
+		Activated:    dto.Activated,
+		LastSeen:     dto.LastSeen,
+		CreatedAt:    dto.CreatedAt,
+		UpdatedBy:    dto.UpdatedBy,
+		UpdatedAt:    dto.UpdatedAt,
+		UserPosts:    dto.UserPosts,
+		Profile: entities.UserProfile{
+			Bio:         dto.Profile.Bio,
+			PictureURL:  dto.Profile.PictureURL,
 			SocialLinks: socialLinks,
 		},
 	}

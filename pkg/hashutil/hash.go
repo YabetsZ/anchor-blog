@@ -1,7 +1,9 @@
 package hashutil
 
 import (
-	"errors"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -21,7 +23,23 @@ func HashPassword(password string) (string, error) {
 func ComparePassword(hashedPassword, plainPassword string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(plainPassword))
 	if err != nil {
-		return errors.New("invalid password")
+		return err
 	}
 	return nil
+}
+
+// HashToken hashes the token string using HMAC-SHA256
+func HashToken(token string, hmacSecret string) string {
+	mac := hmac.New(sha256.New, []byte(hmacSecret))
+	mac.Write([]byte(token))
+	hashed := mac.Sum(nil)
+	return base64.URLEncoding.EncodeToString(hashed)
+}
+
+// Compare HMAC hashed tokens
+func CompareTokens(storedHash, token string, hmacSecret string) bool {
+	// Hash the token presented by the user
+	hashOfToken := HashToken(token, hmacSecret)
+
+	return hmac.Equal([]byte(storedHash), []byte(hashOfToken))
 }
