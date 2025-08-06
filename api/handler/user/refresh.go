@@ -17,7 +17,7 @@ func (uh *UserHandler) Refresh(c *gin.Context) {
 
 	tokenString := authHeader[7:]
 
-	loginResponse, err := uh.UserService.Refresh(tokenString)
+	loginResponse, err := uh.UserService.Refresh(c.Request.Context(), tokenString)
 	if err != nil {
 		handler.HandleHttpError(c, err)
 		c.Abort()

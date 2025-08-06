@@ -1,63 +1,41 @@
 package middleware
 
 import (
+	"anchor-blog/api/handler"
+	"anchor-blog/pkg/jwtutil"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-// AuthMiddleware validates JWT tokens and attaches user info to context
 func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Extract the Authorization header
 		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Authorization header is required",
-			})
-			c.Abort()
+
+		if authHeader == "" || len(authHeader) < 7 || authHeader[:7] != "Bearer " {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Missing or malformed token"})
 			return
 		}
 
-		// Check if it starts with "Bearer "
-		if !strings.HasPrefix(authHeader, "Bearer ") {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Authorization header must start with Bearer",
-			})
-			c.Abort()
-			return
-		}
-
-		// Extract the token
-		token := strings.TrimPrefix(authHeader, "Bearer ")
-		if token == "" {
+		tokenString := authHeader[7:]
+		if tokenString == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Token is required",
 			})
 			c.Abort()
 			return
 		}
-
-		// TODO: Validate the token using jwtutil.ValidateToken when available
-		// For now, this is a placeholder that extracts and validates the token format
-		
-		// Mock validation - replace with actual JWT validation
-		if token == "invalid" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid token",
-			})
+		claim, err := jwtutil.ValidateToken(tokenString, jwtSecret)
+		if err != nil {
+			handler.HandleHttpError(c, err)
 			c.Abort()
 			return
 		}
 
-		// TODO: Extract actual claims from JWT token
-		// Mock user info - replace with actual JWT claims extraction
-		c.Set("userID", "mock-user-id")
-		c.Set("username", "mock-username")
-		c.Set("role", "user")
+		c.Set("UserID", claim.UserID)
+		c.Set("Username", claim.Username)
+		c.Set("Role", claim.Role)
 
-		// Continue to next handler
 		c.Next()
 	}
 }

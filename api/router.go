@@ -7,7 +7,9 @@ import (
 	contentsvc "anchor-blog/internal/service/content"
 
 	"anchor-blog/api/handler/content"
+
 	"anchor-blog/api/middleware"
+
 	"anchor-blog/config"
 
 	"net/http"
@@ -25,34 +27,28 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 		})
 	})
 
-	userGroup := router.Group("/api/v1/user")
+	v1 := router.Group("/api/v1")
 
-	UserRoutes(cfg, userGroup, userHandler)
-
-	v1Auth := router.Group("/api/v1")
-	v1Auth.Use(middleware.AuthMiddleware(cfg.JWT.AccessTokenSecret))
+	// Public routes
+	public := v1.Group("")
 	{
-		// ... your existing authenticated routes for profile, etc.
+		// Auth routes
+		public.POST("/user/register", userHandler.Register) // ✔️
+		public.POST("/user/login", userHandler.Login)       // ✔️
+		public.POST("/refresh", userHandler.Refresh)        // ✔️
 
 		// Post routes
-		v1Auth.POST("/posts", postHandler.Create)
+		public.GET("/posts/:id", postHandler.GetByID)
+		public.GET("/posts", postHandler.List)
+
+		// Account activation
+		// public.GET("activate", activationHandler.ActivateAccount)
 	}
 
-	// Initialize handlers
-	activationHandler := handler.NewActivationHandler()
-
-	// API v1 routes
-	v1 := router.Group("/api/v1")
+	private := v1.Group("")
+	private.Use(middleware.AuthMiddleware(cfg.JWT.AccessTokenSecret))
 	{
-		// User activation route
-		v1.GET("activate", activationHandler.ActivateAccount)
-	}
-
-	// Public routes that don't need auth
-	v1Public := router.Group("/api/v1")
-	{
-		v1Public.GET("/posts/:id", postHandler.GetByID)
-		v1Public.GET("/posts", postHandler.List)
+		private.POST("/posts", postHandler.Create)
 	}
 
 	contentRepo := gemini.NewGeminiRepo(cfg.GenAI.GeminiAPIKey, cfg.GenAI.GeminiModel)
@@ -67,22 +63,4 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 	}
 
 	return router
-}
-
-func UserRoutes(cfg *config.Config, rg *gin.RouterGroup, handler *user.UserHandler) {
-	// Public routes
-
-	public := rg.Group("")
-	public.POST("/login", handler.Login)
-	public.POST("/refresh", handler.Refresh)
-
-	private := rg.Group("")
-	private.Use(middleware.AuthMiddleware(cfg.JWT.AccessTokenSecret))
-
-}
-
-func PostRoutes() {
-	rg.POST("/login", handler.Login)
-	rg.POST("/refresh", handler.Refresh)
-	rg.POST("/register", handler.Register)
 }

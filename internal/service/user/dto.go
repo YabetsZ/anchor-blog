@@ -23,7 +23,7 @@ type UserDTO struct {
 	LastName  string         `json:"last_name"`
 	Email     string         `json:"email"`
 	Role      string         `json:"role"`
-	Password  string         `json:"-"`
+	Password  string         `json:"password"` // this doesn't cause problem! let me know of cases it might cause one
 	Activated bool           `json:"activated"`
 	LastSeen  time.Time      `json:"last_seen"`
 	Profile   UserProfileDTO `json:"profile"`

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"time"
 
 	"anchor-blog/internal/domain/entities"
 )
@@ -16,9 +15,7 @@ func NewPostService(repo entities.IPostRepository) *PostService {
 	return &PostService{postRepo: repo}
 }
 
-func (s *PostService) CreatePost(title, content string, authorID string, tags []string) (*entities.Post, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
+func (s *PostService) CreatePost(ctx context.Context, title, content string, authorID string, tags []string) (*entities.Post, error) {
 	post := &entities.Post{
 		Title:    title,
 		Content:  content,
@@ -29,16 +26,11 @@ func (s *PostService) CreatePost(title, content string, authorID string, tags []
 	return s.postRepo.Create(ctx, post)
 }
 
-func (s *PostService) GetPostByID(id string) (*entities.Post, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
+func (s *PostService) GetPostByID(ctx context.Context, id string) (*entities.Post, error) {
 	return s.postRepo.FindByID(ctx, id)
 }
 
-func (s *PostService) ListPosts(page, limit int64) ([]*entities.Post, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
+func (s *PostService) ListPosts(ctx context.Context, page, limit int64) ([]*entities.Post, error) {
 	if page <= 0 {
 		page = 1
 	}
