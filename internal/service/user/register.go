@@ -57,6 +57,9 @@ func (us *UserServices) Register(ctx context.Context, userDto *UserDTO) (string,
 	user.Username = username
 	user.Email = email
 
+	user.Activated = false
+	user.Role = "unverified"
+
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
 
