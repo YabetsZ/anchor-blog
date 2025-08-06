@@ -74,12 +74,14 @@ func (ur *userRepository) EditUserByID(ctx context.Context, id string, user *ent
 
 	filter := bson.M{"_id": objID}
 
-	var foundUser entities.User
-	err = ur.collection.FindOne(ctx, filter).Decode(&foundUser)
+	var foundUserModel User
+	err = ur.collection.FindOne(ctx, filter).Decode(&foundUserModel)
 	if err != nil {
 		log.Printf("error while find user %v", err.Error())
 		return errorr.ErrInternalServer
 	}
+
+	foundUser := ModelToEntity(&foundUserModel)
 
 	// Update fields if new data is provided
 	if user.Username != "" {
@@ -104,7 +106,15 @@ func (ur *userRepository) EditUserByID(ctx context.Context, id string, user *ent
 		}
 	}
 
-	update := bson.M{"$set": foundUser}
+	foundUser.UpdatedAt = time.Now()
+	
+	updatedUserModel, err := EntityToModel(&foundUser)
+	if err != nil {
+		log.Printf("error while converting entity to model %v", err.Error())
+		return errorr.ErrInternalServer
+	}
+
+	update := bson.M{"$set": updatedUserModel}
 
 	_, err = ur.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
