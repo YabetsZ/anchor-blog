@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler *handler.PostHandler) *gin.Engine {
+func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler *handler.PostHandler, activationHandler *handler.ActivationHandler, passwordResetHandler *handler.PasswordResetHandler) *gin.Engine {
 	router := gin.Default()
 
 	// Health check endpoint
@@ -20,9 +20,7 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 		})
 	})
 
-	// Initialize activation and password reset handlers
-	activationHandler := handler.NewActivationHandler()
-	passwordResetHandler := handler.NewPasswordResetHandler()
+	// Handlers are now injected as dependencies
 
 	// User routes
 	userGroup := router.Group("/api/v1/user")
