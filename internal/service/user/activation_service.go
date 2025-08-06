@@ -2,6 +2,8 @@ package usersvc
 
 import (
 	"anchor-blog/internal/domain/entities"
+	tokenrepo "anchor-blog/internal/repository/token"
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -10,16 +12,20 @@ import (
 )
 
 type ActivationService struct {
-	// TODO: Add repository dependencies when available
+	userRepo            entities.IUserRepository
+	activationTokenRepo *tokenrepo.ActivationTokenRepository
 }
 
 // NewActivationService creates a new activation service
-func NewActivationService() *ActivationService {
-	return &ActivationService{}
+func NewActivationService(userRepo entities.IUserRepository, activationTokenRepo *tokenrepo.ActivationTokenRepository) *ActivationService {
+	return &ActivationService{
+		userRepo:            userRepo,
+		activationTokenRepo: activationTokenRepo,
+	}
 }
 
 // SendActivationEmail generates an activation token and logs the activation link
-func (s *ActivationService) SendActivationEmail(user *entities.User) error {
+func (s *ActivationService) SendActivationEmail(ctx context.Context, user *entities.User) error {
 	// Generate a unique activation token
 	token, err := s.generateActivationToken()
 	if err != nil {
@@ -36,10 +42,13 @@ func (s *ActivationService) SendActivationEmail(user *entities.User) error {
 		CreatedAt: time.Now(),
 	}
 
-	// TODO: Store activation token in database when repository is available
-	_ = activationToken
+	// Store activation token in database
+	err = s.activationTokenRepo.StoreActivationToken(ctx, activationToken)
+	if err != nil {
+		return fmt.Errorf("failed to store activation token: %w", err)
+	}
 
-	// For now, log the activation link to console
+	// Log the activation link to console
 	activationLink := fmt.Sprintf("http://localhost:8080/api/v1/users/activate?token=%s", token)
 	log.Printf("🔗 Activation email for user %s (%s):", user.Username, user.Email)
 	log.Printf("📧 Activation Link: %s", activationLink)
@@ -49,36 +58,62 @@ func (s *ActivationService) SendActivationEmail(user *entities.User) error {
 }
 
 // VerifyActivation validates the token and activates the user
-func (s *ActivationService) VerifyActivation(token string) (*entities.User, error) {
-	// TODO: Implement token validation with database
-	// For now, return mock validation
-
+func (s *ActivationService) VerifyActivation(ctx context.Context, token string) (*entities.User, error) {
 	if token == "" {
 		return nil, fmt.Errorf("activation token is required")
 	}
 
-	// TODO: Find activation token in database
-	// TODO: Check if token exists and is not expired
-	// TODO: Check if token is not already used
-	// TODO: Find user by UserID from token
-	// TODO: Set user.Activated = true and user.Role = "user"
-	// TODO: Mark token as used
-	// TODO: Save user to database
-
-	// Mock response for now
-	log.Printf("✅ Activation token validated: %s", token)
-	log.Printf("🎉 User account activated successfully!")
-
-	// Return mock activated user
-	mockUser := &entities.User{
-		ID:        "mock-user-id",
-		Username:  "activated-user",
-		Email:     "user@example.com",
-		Activated: true,
-		Role:      "user",
+	// Validate token (check if exists, not expired, not used)
+	isValid, err := s.activationTokenRepo.IsTokenValid(ctx, token)
+	if err != nil {
+		return nil, fmt.Errorf("token validation failed: %w", err)
+	}
+	if !isValid {
+		return nil, fmt.Errorf("invalid or expired activation token")
 	}
 
-	return mockUser, nil
+	// Find activation token to get user ID
+	activationToken, err := s.activationTokenRepo.FindActivationToken(ctx, token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find activation token: %w", err)
+	}
+
+	// Find user by ID
+	user, err := s.userRepo.GetUserByID(ctx, activationToken.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find user: %w", err)
+	}
+
+	// Activate user and set role
+	err = s.userRepo.ActivateUserByID(ctx, user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to activate user: %w", err)
+	}
+
+	// Set user role to "user" if not already set
+	if user.Role == "unverified" {
+		err = s.userRepo.SetRole(ctx, user.ID, "user")
+		if err != nil {
+			return nil, fmt.Errorf("failed to set user role: %w", err)
+		}
+	}
+
+	// Mark token as used
+	err = s.activationTokenRepo.MarkTokenAsUsed(ctx, token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to mark token as used: %w", err)
+	}
+
+	// Get updated user
+	updatedUser, err := s.userRepo.GetUserByID(ctx, user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get updated user: %w", err)
+	}
+
+	log.Printf("✅ Activation token validated: %s", token)
+	log.Printf("🎉 User account activated successfully for: %s", updatedUser.Username)
+
+	return updatedUser, nil
 }
 
 // generateActivationToken creates a random hex token

@@ -12,9 +12,9 @@ type ActivationHandler struct {
 }
 
 // NewActivationHandler creates a new activation handler
-func NewActivationHandler() *ActivationHandler {
+func NewActivationHandler(activationService *usersvc.ActivationService) *ActivationHandler {
 	return &ActivationHandler{
-		activationService: usersvc.NewActivationService(),
+		activationService: activationService,
 	}
 }
 
@@ -30,7 +30,7 @@ func (h *ActivationHandler) ActivateAccount(c *gin.Context) {
 	}
 
 	// Verify the activation token
-	user, err := h.activationService.VerifyActivation(token)
+	user, err := h.activationService.VerifyActivation(c.Request.Context(), token)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "Invalid or expired activation token",

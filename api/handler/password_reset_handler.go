@@ -1,20 +1,20 @@
 package handler
 
 import (
-	userservice "anchor-blog/internal/service/user"
+	usersvc "anchor-blog/internal/service/user"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 type PasswordResetHandler struct {
-	passwordResetService *userservice.PasswordResetService
+	passwordResetService *usersvc.PasswordResetService
 }
 
 // NewPasswordResetHandler creates a new password reset handler
-func NewPasswordResetHandler() *PasswordResetHandler {
+func NewPasswordResetHandler(passwordResetService *usersvc.PasswordResetService) *PasswordResetHandler {
 	return &PasswordResetHandler{
-		passwordResetService: userservice.NewPasswordResetService(),
+		passwordResetService: passwordResetService,
 	}
 }
 
@@ -43,7 +43,7 @@ func (h *PasswordResetHandler) ForgotPassword(c *gin.Context) {
 	}
 
 	// Process forgot password request
-	err := h.passwordResetService.ForgotPassword(req.Email)
+	err := h.passwordResetService.ForgotPassword(c.Request.Context(), req.Email)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Failed to process forgot password request",
@@ -73,7 +73,7 @@ func (h *PasswordResetHandler) ResetPassword(c *gin.Context) {
 	}
 
 	// Process password reset
-	user, err := h.passwordResetService.ResetPassword(req.Token, req.NewPassword)
+	user, err := h.passwordResetService.ResetPassword(c.Request.Context(), req.Token, req.NewPassword)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Failed to reset password",

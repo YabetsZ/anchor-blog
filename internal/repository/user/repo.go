@@ -1,11 +1,14 @@
 package userrepo
 
-import "go.mongodb.org/mongo-driver/mongo"
+import (
+	"anchor-blog/internal/domain/entities"
+	"go.mongodb.org/mongo-driver/mongo"
+)
 
 type userRepository struct {
 	collection *mongo.Collection
 }
 
-func NewUserRepository(collection *mongo.Collection) *userRepository {
+func NewUserRepository(collection *mongo.Collection) entities.IUserRepository {
 	return &userRepository{collection: collection}
 }
