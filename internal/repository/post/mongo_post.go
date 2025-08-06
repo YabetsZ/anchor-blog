@@ -26,11 +26,11 @@ func NewMongoPostRepository(collection *mongo.Collection) entities.IPostReposito
 }
 
 func (r *mongoPostRepository) Create(ctx context.Context, dPost *entities.Post) (*entities.Post, error) {
+	dPost.ID = primitive.NewObjectID().Hex()
 	post, err := FromDomainPost(dPost)
 	if err != nil {
 		return nil, err
 	}
-	post.ID = primitive.NewObjectID()
 	post.CreatedAt = time.Now()
 	post.UpdatedAt = time.Now()
 	post.Likes = []primitive.ObjectID{}

@@ -44,6 +44,7 @@ func ensureIndexes(ctx context.Context, col *mongo.Collection) error {
 }
 
 func (mt *mongoTokenRepository) StoreRefreshToken(ctx context.Context, token *entities.RefreshToken) error {
+	token.ID = primitive.NewObjectID().Hex()
 	mToken, err := FromDomainToken(token)
 	if err != nil {
 		return err
@@ -62,6 +63,7 @@ func (mt *mongoTokenRepository) FindByHash(ctx context.Context, hash string) (*e
 	err := mt.collection.FindOne(ctx, bson.M{"token_hash": hash}).Decode(&token)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
+			log.Println("No document with that hash is found:", err)
 			return nil, errors.ErrNotFound
 		}
 		log.Println("error while finding hash: ", err)

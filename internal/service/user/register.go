@@ -12,6 +12,7 @@ import (
 )
 
 func (us *UserServices) Register(ctx context.Context, userDto *UserDTO) (string, error) {
+
 	user := DTOToEntity(*userDto)
 
 	passwordHash, err := hashutil.HashPassword(userDto.Password)
@@ -52,6 +53,7 @@ func (us *UserServices) Register(ctx context.Context, userDto *UserDTO) (string,
 	if firstName == "" && lastName == "" {
 		return "", AppError.ErrNameCannotEmpty
 	}
+
 	user.FirstName, user.LastName = firstName, lastName
 
 	user.Username = username
@@ -63,7 +65,5 @@ func (us *UserServices) Register(ctx context.Context, userDto *UserDTO) (string,
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
 
-	c, cancel := context.WithTimeout(context.Background(), time.Duration(10*time.Second))
-	defer cancel()
-	return us.userRepo.CreateUser(c, &user)
+	return us.userRepo.CreateUser(ctx, &user)
 }

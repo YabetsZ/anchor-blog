@@ -17,8 +17,8 @@ func NewUserHandler(us *usersvc.UserServices) *UserHandler {
 }
 
 type LoginRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
 }
 
 func (uh *UserHandler) Login(c *gin.Context) {
@@ -28,7 +28,7 @@ func (uh *UserHandler) Login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid input"})
 		return
 	}
-	response, err := uh.UserService.Login(input.Username, input.Password)
+	response, err := uh.UserService.Login(c.Request.Context(), input.Username, input.Password)
 	if err != nil {
 		handler.HandleHttpError(c, err)
 		return

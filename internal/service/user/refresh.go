@@ -10,9 +10,8 @@ import (
 	"time"
 )
 
-func (us *UserServices) Refresh(refreshToken string) (*LoginResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
+func (us *UserServices) Refresh(ctx context.Context, refreshToken string) (*LoginResponse, error) {
+
 	claim, err := jwtutil.ValidateToken(refreshToken, us.cfg.JWT.RefreshTokenSecret)
 	if err != nil {
 		return nil, err
@@ -50,10 +49,13 @@ func (us *UserServices) Refresh(refreshToken string) (*LoginResponse, error) {
 	}
 
 	err = us.tokenRepo.StoreRefreshToken(ctx, &entities.RefreshToken{
-		UserID:    claim.ID,
+		UserID:    claim.UserID,
 		TokenHash: hashutil.HashToken(newRefreshToken, us.cfg.HMAC.Secret),
 		ExpiresAt: time.Now().Add(jwtutil.RefreshTokenDuration),
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	return &LoginResponse{
 		AccessToken:  newAccessToken,

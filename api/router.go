@@ -3,6 +3,7 @@ package api
 import (
 	"anchor-blog/api/handler"
 	"anchor-blog/api/handler/user"
+	"anchor-blog/api/middleware"
 
 	"anchor-blog/config"
 
@@ -27,9 +28,9 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 	public := v1.Group("")
 	{
 		// Auth routes
-		public.POST("/user/register", userHandler.Register)
-		public.POST("/user/login", userHandler.Login)
-		public.POST("/refresh", userHandler.Refresh)
+		public.POST("/user/register", userHandler.Register) // ✔️
+		public.POST("/user/login", userHandler.Login)       // ✔️
+		public.POST("/refresh", userHandler.Refresh)        // ✔️
 
 		// Post routes
 		public.GET("/posts/:id", postHandler.GetByID)
@@ -39,11 +40,11 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 		// public.GET("activate", activationHandler.ActivateAccount)
 	}
 
-	// private := v1.Group("")
-	// private.Use(middleware.AuthMiddleware(cfg.JWT.AccessTokenSecret))
-	// {
-	// 	private.POST("/posts", postHandler.Create)
-	// }
+	private := v1.Group("")
+	private.Use(middleware.AuthMiddleware(cfg.JWT.AccessTokenSecret))
+	{
+		private.POST("/posts", postHandler.Create)
+	}
 
 	return router
 }
