@@ -19,12 +19,17 @@ func SetupRouter() *gin.Engine {
 
 	// Initialize handlers
 	activationHandler := handler.NewActivationHandler()
+	passwordResetHandler := handler.NewPasswordResetHandler()
 
 	// API v1 routes
 	v1 := router.Group("/api/v1")
 	{
 		// User activation route
 		v1.GET("/users/activate", activationHandler.ActivateAccount)
+		
+		// Password reset routes
+		v1.POST("/users/forgot-password", passwordResetHandler.ForgotPassword)
+		v1.POST("/users/reset-password", passwordResetHandler.ResetPassword)
 	}
 
 	return router
