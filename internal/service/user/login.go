@@ -13,13 +13,20 @@ import (
 
 // This service will be merged into one file with others when other user-services are completed.
 type UserServices struct {
-	userRepo  entities.IUserRepository
-	tokenRepo entities.ITokenRepository
-	cfg       *config.Config
+	userRepo       entities.IUserRepository
+	tokenRepo      entities.ITokenRepository
+	cfg            *config.Config
+	ProfileService *ProfileService
 }
 
 func NewUserServices(userRepo entities.IUserRepository, tokenRepo entities.ITokenRepository, cfg *config.Config) *UserServices {
-	return &UserServices{userRepo, tokenRepo, cfg}
+	profileService := NewProfileService(userRepo)
+	return &UserServices{
+		userRepo:       userRepo,
+		tokenRepo:      tokenRepo,
+		cfg:            cfg,
+		ProfileService: profileService,
+	}
 }
 
 type LoginResponse struct {
