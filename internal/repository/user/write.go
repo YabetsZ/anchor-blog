@@ -14,6 +14,9 @@ import (
 
 func (ur *userRepository) CreateUser(ctx context.Context, user *entities.User) (string, error) {
 	userDoc, err := EntityToModel(user)
+	userDoc.ID = primitive.NewObjectID()
+	userDoc.UpdatedBy = userDoc.ID
+
 	if err != nil {
 		log.Printf("error while transfer user entity to user model %v", err.Error())
 		return "", errorr.ErrInternalServer
