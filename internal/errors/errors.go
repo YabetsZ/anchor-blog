@@ -14,5 +14,10 @@ var (
 	ErrValidationFailed   = errors.New("validation failed")
 	ErrInternalServer     = errors.New("internal server error")
 	ErrInvalidToken       = errors.New("invalid token")
+
 	ErrInvalidPostID      = errors.New("invalid post id")
+
+	ErrNameCannotEmpty    = errors.New("name cannot be empty")
+	ErrInvalidUsername    = errors.New("invalid username")
+
 )

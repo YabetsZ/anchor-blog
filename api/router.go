@@ -3,8 +3,10 @@ package api
 import (
 	"anchor-blog/api/handler"
 	"anchor-blog/api/handler/user"
+
 	"anchor-blog/api/middleware"
 	"anchor-blog/config"
+
 
 	"net/http"
 
@@ -56,6 +58,7 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 
 func UserRoutes(cfg *config.Config, rg *gin.RouterGroup, handler *user.UserHandler) {
 	// Public routes
+
 	public := rg.Group("")
 	public.POST("/login", handler.Login)
 	public.POST("/refresh", handler.Refresh)
@@ -66,5 +69,10 @@ func UserRoutes(cfg *config.Config, rg *gin.RouterGroup, handler *user.UserHandl
 }
 
 func PostRoutes() {
+
+	rg.POST("/login", handler.Login)
+	rg.POST("/refresh", handler.Refresh)
+	rg.POST("/register", handler.Register)
+
 
 }
