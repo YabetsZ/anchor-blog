@@ -60,4 +60,9 @@ func UserRoutes(cfg *config.Config, rg *gin.RouterGroup, handler *user.UserHandl
 	// Private routes
 	private := rg.Group("")
 	private.Use(middleware.AuthMiddleware(cfg.JWT.AccessTokenSecret))
+	{
+		// Profile routes
+		private.GET("/profile", handler.GetProfile)
+		private.PUT("/profile", handler.UpdateProfile)
+	}
 }
