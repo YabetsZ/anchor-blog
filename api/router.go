@@ -1,23 +1,21 @@
 package api
 
 import (
+	"anchor-blog/api/handler"
+	"anchor-blog/api/handler/content"
 	"anchor-blog/api/handler/post"
 	"anchor-blog/api/handler/user"
+	"anchor-blog/api/middleware"
+	"anchor-blog/config"
 	"anchor-blog/internal/repository/gemini"
 	contentsvc "anchor-blog/internal/service/content"
-
-	"anchor-blog/api/handler/content"
-
-	"anchor-blog/api/middleware"
-
-	"anchor-blog/config"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 
-func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler *handler.PostHandler, activationHandler *handler.ActivationHandler, passwordResetHandler *handler.PasswordResetHandler) *gin.Engine {
+func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler *post.PostHandler, activationHandler *handler.ActivationHandler, passwordResetHandler *handler.PasswordResetHandler) *gin.Engine {
 	router := gin.Default()
 
 	// Health check endpoint
@@ -50,7 +48,12 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 	private := v1.Group("")
 	private.Use(middleware.AuthMiddleware(cfg.JWT.AccessTokenSecret))
 	{
+		// Post routes
 		private.POST("/posts", postHandler.Create) // ✔️
+		
+		// Profile routes
+		private.GET("/user/profile", userHandler.GetProfile)
+		private.PUT("/user/profile", userHandler.UpdateProfile)
 	}
 
 	contentRepo := gemini.NewGeminiRepo(cfg.GenAI.GeminiAPIKey, cfg.GenAI.GeminiModel)

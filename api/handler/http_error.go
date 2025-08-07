@@ -9,6 +9,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type ErrorResponse struct {
+	Error   string `json:"error"`
+	Success bool   `json:"success"`
+}
+
 func HandleHttpError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, errs.ErrNotFound),
@@ -33,4 +38,11 @@ func HandleHttpError(c *gin.Context, err error) {
 		log.Printf("An unexpected error occurred: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error occurred"})
 	}
+}
+
+func HandleError(c *gin.Context, statusCode int, message string) {
+	c.JSON(statusCode, ErrorResponse{
+		Error:   message,
+		Success: false,
+	})
 }

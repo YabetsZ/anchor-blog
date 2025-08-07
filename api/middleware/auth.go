@@ -30,7 +30,7 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 
 
 		// Validate the token using JWT utilities
-		claims, err := jwtutil.ValidateToken(token, jwtSecret)
+		claims, err := jwtutil.ValidateToken(tokenString, jwtSecret)
 		if err != nil {
 			if err == errors.ErrInvalidToken {
 				c.JSON(http.StatusUnauthorized, gin.H{
@@ -47,7 +47,7 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 
 
 		// Extract user info from JWT claims and attach to context
-		c.Set("userID", claims.UserID)
+		c.Set("user_id", claims.UserID)
 		c.Set("username", claims.Username)
 		c.Set("role", claims.Role)
 

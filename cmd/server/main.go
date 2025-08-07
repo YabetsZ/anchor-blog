@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"anchor-blog/api"
+	"anchor-blog/api/handler"
 	"anchor-blog/api/handler/post"
 	"anchor-blog/api/handler/user"
 	"anchor-blog/config"
