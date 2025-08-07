@@ -5,13 +5,16 @@ import (
 
 	"anchor-blog/api"
 	"anchor-blog/api/handler"
+	"anchor-blog/api/handler/content"
 	"anchor-blog/api/handler/post"
 	"anchor-blog/api/handler/user"
 	"anchor-blog/config"
+	"anchor-blog/internal/repository/gemini"
 	postrepo "anchor-blog/internal/repository/post"
 	tokenrepo "anchor-blog/internal/repository/token"
 	userrepo "anchor-blog/internal/repository/user"
 	"anchor-blog/internal/service"
+	contentsvc "anchor-blog/internal/service/content"
 	usersvc "anchor-blog/internal/service/user"
 	"anchor-blog/pkg/db"
 )
@@ -52,9 +55,10 @@ func main() {
 	postHandler := post.NewPostHandler(service.NewPostService(postrepo.NewMongoPostRepository(postCollection)))
 	activationHandler := handler.NewActivationHandler(activationService)
 	passwordResetHandler := handler.NewPasswordResetHandler(passwordResetService)
+	contentHandler := content.NewContentHandler(contentsvc.NewContentUsecase(gemini.NewGeminiRepo(cfg.GenAI.GeminiAPIKey, cfg.GenAI.GeminiModel)))
 
 	// Start Server
-	router := api.SetupRouter(cfg, userHandler, postHandler, activationHandler, passwordResetHandler)
+	router := api.SetupRouter(cfg, userHandler, postHandler, activationHandler, passwordResetHandler, contentHandler)
 	log.Printf("🚀 Server is running on port %s\n", cfg.Server.Port)
 	if err := router.Run(":" + cfg.Server.Port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
