@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -39,24 +38,72 @@ func NewGeminiRepo(apiKey, model string) *GeminiRepo {
 	}
 }
 
-func (r *GeminiRepo) Generate(ctx context.Context, req entities.ContentRequest) (*entities.ContentResponse, error) {
+func (r *GeminiRepo) Generate(ctx context.Context, req entities.ContentRequest) (string, error) {
 	prompt := r.buildPrompt(req)
 	if prompt == "" {
-		return nil, errors.New("empty prompt generated")
+		return "", errors.New("empty prompt generated")
 	}
 
 	payload := r.createPayload(prompt)
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return nil, fmt.Errorf("payload marshaling failed: %w", err)
+		return "", fmt.Errorf("payload marshaling failed: %w", err)
 	}
 
 	respBody, err := r.executeAPIRequest(ctx, body)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	log.Println(string(respBody))
-	return r.parseResponse(respBody)
+
+	// Parse and extract the Markdown content
+	markdown, err := r.extractMarkdownResponse(respBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to extract markdown: %w", err)
+	}
+
+	return markdown, nil
+}
+
+func (r *GeminiRepo) extractMarkdownResponse(respBody []byte) (string, error) {
+	// Define response structure to extract the text part
+	type apiCandidate struct {
+		Content struct {
+			Parts []struct {
+				Text string `json:"text"`
+			} `json:"parts"`
+		} `json:"content"`
+		SafetyRatings []struct {
+			Category    string `json:"category"`
+			Probability string `json:"probability"`
+		} `json:"safetyRatings"`
+	}
+
+	type apiResponse struct {
+		Candidates []apiCandidate `json:"candidates"`
+	}
+
+	// Parse the outer API response
+	var apiResp apiResponse
+	if err := json.Unmarshal(respBody, &apiResp); err != nil {
+		return "", fmt.Errorf("API response parsing failed: %w", err)
+	}
+
+	if len(apiResp.Candidates) == 0 {
+		return "", AppError.ErrContentBlocked
+	}
+
+	candidate := apiResp.Candidates[0]
+	if len(candidate.Content.Parts) == 0 {
+		return "", errors.New("empty content parts in API response")
+	}
+
+	// Check safety violations
+	if blocked, reasons := r.checkSafetyViolations(candidate.SafetyRatings); blocked {
+		return "", fmt.Errorf("%w: %v", AppError.ErrContentBlocked, strings.Join(reasons, ", "))
+	}
+
+	// Return the raw Markdown content
+	return candidate.Content.Parts[0].Text, nil
 }
 
 func sanitize(s string, maxLen int) string {
@@ -74,71 +121,74 @@ func (r *GeminiRepo) buildPrompt(req entities.ContentRequest) string {
 	if tone == "" {
 		tone = "informative"
 	}
-	audience := ""
-	for _, word := range req.Audience {
-		audience += " " + word
-	}
+	audience := strings.Join(req.Audience, ", ")
 	wordCount := req.WordCount
 	if wordCount <= 0 {
-		wordCount = 30
+		wordCount = 100
 	}
 	scope := sanitize(req.Scope, 1000)
 
-	return fmt.Sprintf(`You are an expert blog writer and SEO specialist. Generate a high-quality blog post and return VALID JSON only (no markdown, no extra text, no explanation). The JSON must match this schema exactly:
+	return fmt.Sprintf(`Generate a comprehensive blog post in MARKDOWN format following these requirements:
 
-{
-  "title": "string",                     // 6-12 words, SEO-friendly
-  "meta_description": "string",          // 1 sentence (max 155 characters)
-  "outline": [
-    {
-      "heading": "H2 heading",
-      "key_points": ["short bullet point", "..."]  // 1-4 items
-    }
-  ],
-  "body": [
-    {
-      "heading": "H2 heading or intro",
-      "paragraphs": ["paragraph1", "paragraph2"],
-      "h3s": [
-         {
-           "subheading": "H3 heading",
-           "bullets": ["bullet1", "bullet2"]
-         }
-      ]
-    }
-  ],
-  "enhancements": {
-    "seo_keywords": ["keyword1","keyword2"],
-    "content_gaps": ["missing topic or angle to add"],
-    "audience_tips": ["tips tailored for the audience"]
-  }
-}
+# Content Requirements
+- Topic: %s
+- Tone: %s
+- Audience: %s
+- Word Count: %d
+- Scope: %s
 
-User inputs:
-- Topic: "%s"
-- Tone: "%s"
-- Audience: "%s"
-- WordCount target: %d
-- Scope/details: "%s"
+# Formatting Rules
+1. Use standard Markdown formatting
+2. Include these sections:
+   ## Title (H1)
+   ### Meta Description (plain text)
+   ## Outline (H2)
+   - Bullet points of key sections
+   ## Body Content (H2)
+   - Detailed paragraphs
+   ### Subsections (H3 as needed)
+   - Actionable items as bullet points
+   ## Enhancements (H2)
+   - SEO Keywords
+   - Content Gaps
+   - Audience Tips
 
-Requirements:
-1. Follow the schema above exactly. Return ONLY a single JSON object that validates to the schema.
-2. Title: 6-12 words and include the main topic token(s).
-3. Meta description: one concise sentence (<=155 chars).
-4. Outline: at least 3 H2 sections; each H2 should include 1-4 key points.
-5. Body: write paragraphs under each heading. Total body length should be approximately %d words (+/- 15%%). Use 2-4 short paragraphs per H2. Include at least 3 practical, actionable steps where relevant.
-6. Use plain language appropriate for the audience. Provide localized examples if the scope mentions a location.
-7. SEO: include a short list of 6-12 relevant SEO keywords in .
-8. Safety: Avoid illegal content, explicit sexual content, instructions to harm, medical diagnosis or legal advice. Do not provide phone numbers, email addresses, or personal data.
-9. Formatting: No markdown, no backticks, no explanation text — JSON ONLY.
+# Content Guidelines
+- Provide 3-5 actionable tips
+- Include 6-12 relevant SEO keywords
+- Identify 2-3 content gaps
+- Offer audience-specific advice
+- Avoid any unsafe/prohibited content
 
-If you cannot fulfill the request due to policy reasons, return JSON:
-{ "error": "reason" }
+# Example Structure
+# Optimizing Developer Productivity
 
-Now generate the JSON-only response.`, topic, tone, audience, wordCount, scope, wordCount)
+Meta description: Practical strategies to improve coding efficiency and focus for software engineers.
+
+## Outline
+- Time management techniques
+- Tooling recommendations
+- Team collaboration strategies
+
+## Body Content
+### Time Management
+- Implement Pomodoro technique...
+- Use time blocking...
+
+### Recommended Tools
+- VS Code extensions...
+- CLI productivity tools...
+
+## Enhancements
+**SEO Keywords**: developer productivity, coding efficiency, time management  
+**Content Gaps**: Comparison of IDEs, Remote pair programming tools  
+**Audience Tips**: Adjust techniques for agile teams, Async communication practices
+
+Now generate the content about: %s`, topic, tone, audience, wordCount, scope, topic)
 }
 
 func (r *GeminiRepo) createPayload(prompt string) map[string]interface{} {
+	// Use the exact enum values expected by Gemini API
 	safetySettings := []map[string]string{
 		{
 			"category":  "HARM_CATEGORY_HATE_SPEECH",
@@ -172,7 +222,6 @@ func (r *GeminiRepo) createPayload(prompt string) map[string]interface{} {
 			"temperature":     0.7,
 			"topP":            0.9,
 			"topK":            40,
-			"stopSequences":   []string{"##"},
 		},
 	}
 }
@@ -200,136 +249,6 @@ func (r *GeminiRepo) executeAPIRequest(ctx context.Context, body []byte) ([]byte
 	return io.ReadAll(resp.Body)
 }
 
-func (r *GeminiRepo) parseResponse(respBody []byte) (*entities.ContentResponse, error) {
-	type apiCandidate struct {
-		Content struct {
-			Parts []struct {
-				Text string `json:"text"`
-			} `json:"parts"`
-		} `json:"content"`
-		SafetyRatings []struct {
-			Category    string `json:"category"`
-			Probability string `json:"probability"`
-		} `json:"safetyRatings"`
-	}
-
-	type apiResponse struct {
-		Candidates []apiCandidate `json:"candidates"`
-	}
-
-	var apiResp apiResponse
-	if err := json.Unmarshal(respBody, &apiResp); err != nil {
-		return nil, fmt.Errorf("API response parsing failed: %w", err)
-	}
-
-	if len(apiResp.Candidates) == 0 {
-		return nil, fmt.Errorf("%w: no candidates returned", AppError.ErrContentBlocked)
-	}
-
-	candidate := apiResp.Candidates[0]
-	if len(candidate.Content.Parts) == 0 {
-		return nil, fmt.Errorf("empty content parts in API response")
-	}
-
-	if blocked, reasons := r.checkSafetyViolations(candidate.SafetyRatings); blocked {
-		return nil, fmt.Errorf("%w: %v", AppError.ErrContentBlocked, strings.Join(reasons, ", "))
-	}
-
-	contentText := candidate.Content.Parts[0].Text
-	cleaned := cleanMarkdownJSON(contentText)
-
-	var temp struct {
-		Title           string `json:"title"`
-		MetaDescription string `json:"meta_description"`
-		Outline         []struct {
-			Heading   string   `json:"heading"`
-			KeyPoints []string `json:"key_points"`
-		} `json:"outline"`
-		Body []struct {
-			Heading    string   `json:"heading"`
-			Paragraphs []string `json:"paragraphs"`
-			H3s        []struct {
-				Subheading string   `json:"subheading"`
-				Bullets    []string `json:"bullets"`
-			} `json:"h3s"`
-		} `json:"body"`
-		Enhancements struct {
-			SEOKeywords  []string `json:"seo_keywords"`
-			ContentGaps  []string `json:"content_gaps"`
-			AudienceTips []string `json:"audience_tips"`
-		} `json:"enhancements"`
-		Error string `json:"error,omitempty"`
-	}
-
-	if err := json.Unmarshal([]byte(cleaned), &temp); err != nil {
-		return nil, fmt.Errorf("content JSON parsing failed: %w\nOriginal: %s\nCleaned: %s",
-			err, contentText, cleaned)
-	}
-
-	if temp.Error != "" {
-		return nil, fmt.Errorf("%w: %s", AppError.ErrContentBlocked, temp.Error)
-	}
-
-	if len(temp.Title) == 0 || len(temp.MetaDescription) == 0 || len(temp.Outline) < 3 || len(temp.Body) < 3 {
-		return nil, fmt.Errorf("invalid content structure: missing required fields")
-	}
-
-	content := entities.ContentResponse{
-		Title:           temp.Title,
-		MetaDescription: temp.MetaDescription,
-		Outline:         make([]entities.Section, len(temp.Outline)),
-		Body:            make([]entities.BodySection, len(temp.Body)),
-		Enhancements: entities.Enhancements{
-			SEOKeywords:  temp.Enhancements.SEOKeywords,
-			ContentGaps:  temp.Enhancements.ContentGaps,
-			AudienceTips: temp.Enhancements.AudienceTips,
-		},
-	}
-
-	for i, o := range temp.Outline {
-		content.Outline[i] = entities.Section{
-			Heading:   o.Heading,
-			KeyPoints: o.KeyPoints,
-		}
-	}
-
-	for i, b := range temp.Body {
-		content.Body[i] = entities.BodySection{
-			Heading:     b.Heading,
-			Paragraphs:  b.Paragraphs,
-			Subsections: make([]entities.Subsection, len(b.H3s)),
-		}
-		for j, h3 := range b.H3s {
-			content.Body[i].Subsections[j] = entities.Subsection{
-				Subheading: h3.Subheading,
-				Bullets:    h3.Bullets,
-			}
-		}
-	}
-
-	content.SafetyReport = r.buildSafetyReport(candidate.SafetyRatings)
-	return &content, nil
-}
-
-func cleanMarkdownJSON(input string) string {
-	input = strings.TrimPrefix(input, "```json")
-	input = strings.TrimPrefix(input, "```")
-	input = strings.TrimSuffix(input, "```")
-
-	input = strings.ReplaceAll(input, "\\\"", "\"")
-	input = strings.ReplaceAll(input, "\\n", "\n")
-	input = strings.TrimSpace(input)
-
-	if start := strings.Index(input, "{"); start > 0 {
-		input = input[start:]
-	}
-	if end := strings.LastIndex(input, "}"); end >= 0 && end < len(input)-1 {
-		input = input[:end+1]
-	}
-
-	return input
-}
-
 func (r *GeminiRepo) checkSafetyViolations(ratings []struct {
 	Category    string `json:"category"`
 	Probability string `json:"probability"`
@@ -342,22 +261,6 @@ func (r *GeminiRepo) checkSafetyViolations(ratings []struct {
 		}
 	}
 	return len(violations) > 0, violations
-}
-
-func (r *GeminiRepo) buildSafetyReport(ratings []struct {
-	Category    string `json:"category"`
-	Probability string `json:"probability"`
-}) entities.SafetyReport {
-	report := entities.SafetyReport{Safe: true}
-	for _, rating := range ratings {
-		if rating.Probability == "HIGH" || rating.Probability == "MEDIUM" {
-			report.Blocked = true
-			report.BlockReasons = append(report.BlockReasons,
-				fmt.Sprintf("%s:%s", rating.Category, rating.Probability))
-			report.Safe = false
-		}
-	}
-	return report
 }
 
 type SafetyConfig struct {
