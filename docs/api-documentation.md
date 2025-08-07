@@ -387,68 +387,39 @@ Content-Type: application/json
 **Response:**
 ```json
 {
-  "title": "Machine Learning for Beginners: A Comprehensive Guide",
-  "meta_description": "Learn the fundamentals of machine learning with this beginner-friendly guide covering key concepts, algorithms, and practical applications.",
-  "outline": [
-    {
-      "heading": "What is Machine Learning?",
-      "key_points": [
-        "Definition and core concepts",
-        "Types of machine learning",
-        "Real-world applications"
-      ]
-    },
-    {
-      "heading": "Getting Started with ML",
-      "key_points": [
-        "Essential tools and libraries",
-        "Setting up your environment",
-        "First ML project walkthrough"
-      ]
-    }
-  ],
-  "body": [
-    {
-      "heading": "What is Machine Learning?",
-      "paragraphs": [
-        "Machine learning is a subset of artificial intelligence that enables computers to learn and make decisions from data without being explicitly programmed.",
-        "This revolutionary technology powers everything from recommendation systems to autonomous vehicles, transforming how we interact with technology."
-      ],
-      "h3s": [
-        {
-          "subheading": "Types of Machine Learning",
-          "bullets": [
-            "Supervised learning: Learning with labeled data",
-            "Unsupervised learning: Finding patterns in unlabeled data",
-            "Reinforcement learning: Learning through trial and error"
-          ]
-        }
-      ]
-    }
-  ],
-  "enhancements": {
-    "seo_keywords": [
-      "machine learning",
-      "artificial intelligence",
-      "data science",
-      "ML algorithms",
-      "beginner guide"
-    ],
-    "content_gaps": [
-      "Consider adding more practical examples",
-      "Include code snippets for better understanding"
-    ],
-    "audience_tips": [
-      "Use simple analogies for complex concepts",
-      "Provide step-by-step tutorials"
-    ]
-  },
-  "safety_report": {
-    "blocked": false,
-    "block_reasons": [],
-    "safe": true
-  },
-  "word_count": 150
+# Modern JavaScript Best Practices
+
+Meta description: Essential patterns and techniques for writing clean, maintainable JavaScript code in 2023.
+
+## Outline
+- Variable declarations
+- Asynchronous patterns
+- Error handling
+- Performance optimization
+
+## Introduction
+JavaScript has evolved significantly in recent years...
+
+## Variable Declarations
+Always prefer `const` and `let` over `var`...
+
+### Scoping Rules
+- Use block scope for tighter variable control
+- Avoid polluting the global namespace
+- Leverage IIFEs when needed
+
+## Asynchronous Patterns
+Modern JavaScript provides several approaches...
+
+### Recommended Techniques
+- Use async/await for readability
+- Handle promises properly
+- Consider Promise.all for parallel operations
+
+## Enhancements
+**SEO Keywords**: JavaScript, ES6, async/await, best practices  
+**Content Gaps**: Tree shaking, Web Workers  
+**Audience Tips**: Beginners: Master fundamentals first, Experts: Explore TC39 proposals
 }
 ```
 
