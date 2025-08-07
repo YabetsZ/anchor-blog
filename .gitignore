@@ -1,4 +1,38 @@
-config.dev.yaml
+# Binaries
+*.exe
+*.dll
+*.pdb
 
-.vscode
-.cph
+# Redis
+redis/
+redis.zip
+dump.rdb
+
+# Test files
+test_api.ps1
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+build/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Go
+vendor/

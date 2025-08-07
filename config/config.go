@@ -32,6 +32,14 @@ type Config struct {
 		MinWords     int    `mapstructure:"min_words"`
 		MaxWords     int    `mapstructure:"max_words"`
 	} `mapstructure:"genai"`
+
+	Redis struct {
+		Host             string `mapstructure:"host"`
+		Port             string `mapstructure:"port"`
+		Password         string `mapstructure:"password"`
+		DB               int    `mapstructure:"db"`
+		ViewTrackingTTL  int    `mapstructure:"view_tracking_ttl"`
+	} `mapstructure:"redis"`
 }
 
 func LoadConfig(path string) (*Config, error) {

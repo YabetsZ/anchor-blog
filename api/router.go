@@ -40,6 +40,9 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 		// Post routes
 		public.GET("/posts/:id", postHandler.GetByID) // ✔️
 		public.GET("/posts", postHandler.List)        // ✔️
+		public.GET("/posts/popular", postHandler.GetPopularPosts) // ✔️
+		public.GET("/posts/:id/views", postHandler.GetPostViewCount) // ✔️
+		public.GET("/stats/views", postHandler.GetViewStats) // ✔️
 	}
 
 	private := v1.Group("")
