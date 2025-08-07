@@ -60,7 +60,7 @@ func GenerateRefreshToken(user *entities.User, secret string) (string, error) {
 
 func ValidateToken(tokenString string, secret string) (*entities.CustomClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &entities.CustomClaims{}, func(token *jwt.Token) (any, error) {
-		return secret, nil
+		return []byte(secret), nil
 	})
 	if err != nil {
 		return nil, err
