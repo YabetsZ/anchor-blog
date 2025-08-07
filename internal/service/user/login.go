@@ -34,9 +34,7 @@ type LoginResponse struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-func (us *UserServices) Login(username, password string) (*LoginResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
+func (us *UserServices) Login(ctx context.Context, username, password string) (*LoginResponse, error) {
 
 	user, err := us.userRepo.GetUserByUsername(ctx, username)
 	if err != nil {
@@ -45,7 +43,7 @@ func (us *UserServices) Login(username, password string) (*LoginResponse, error)
 
 	err = hashutil.ComparePassword(user.PasswordHash, password)
 	if err != nil {
-		log.Printf("login failed for username '%s': invalid password", username)
+		log.Printf("login failed for username '%s': invalid password /nerror: %v", username, err)
 		return nil, errors.ErrInvalidCredentials
 	}
 
@@ -70,7 +68,7 @@ func (us *UserServices) Login(username, password string) (*LoginResponse, error)
 		ExpiresAt: time.Now().Add(jwtutil.RefreshTokenDuration),
 	})
 	if err != nil {
-		log.Println("failed to store refresh token")
+		log.Println("failed to store refresh token: ", err.Error())
 		return nil, err
 	}
 

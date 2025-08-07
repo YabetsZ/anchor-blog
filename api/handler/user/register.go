@@ -8,6 +8,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type registerResponse struct {
+	ID string `json:"id"`
+}
+
 func (uh *UserHandler) Register(c *gin.Context) {
 	var input usersvc.UserDTO
 	err := c.BindJSON(&input)
@@ -15,11 +19,11 @@ func (uh *UserHandler) Register(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid input"})
 		return
 	}
-	response, err := uh.UserService.Register(c, &input)
+	id, err := uh.UserService.Register(c.Request.Context(), &input)
 	if err != nil {
 		handler.HandleHttpError(c, err)
 		return
 	}
-
+	response := registerResponse{ID: id}
 	c.JSON(http.StatusOK, response)
 }

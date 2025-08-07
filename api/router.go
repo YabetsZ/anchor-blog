@@ -2,15 +2,20 @@ package api
 
 import (
 	"anchor-blog/api/handler"
+	"anchor-blog/api/handler/content"
+	"anchor-blog/api/handler/post"
 	"anchor-blog/api/handler/user"
 	"anchor-blog/api/middleware"
 	"anchor-blog/config"
+	"anchor-blog/internal/repository/gemini"
+	contentsvc "anchor-blog/internal/service/content"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler *handler.PostHandler, activationHandler *handler.ActivationHandler, passwordResetHandler *handler.PasswordResetHandler) *gin.Engine {
+
+func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler *post.PostHandler, activationHandler *handler.ActivationHandler, passwordResetHandler *handler.PasswordResetHandler) *gin.Engine {
 	router := gin.Default()
 
 	// Health check endpoint
@@ -20,49 +25,47 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 		})
 	})
 
-	// Handlers are now injected as dependencies
+	v1 := router.Group("/api/v1")
 
-	// User routes
-	userGroup := router.Group("/api/v1/user")
-	UserRoutes(cfg, userGroup, userHandler)
-
-	// Authenticated routes
-	v1Auth := router.Group("/api/v1")
-	v1Auth.Use(middleware.AuthMiddleware(cfg.JWT.AccessTokenSecret))
+	// Public routes
+	public := v1.Group("")
 	{
+		// Auth routes
+		public.POST("/user/register", userHandler.Register) // ✔️
+		public.POST("/user/login", userHandler.Login)       // ✔️
+		public.POST("/refresh", userHandler.Refresh)        // ✔️
+    
+    // User activation and password reset routes
+		public.GET("/users/activate", activationHandler.ActivateAccount)
+		public.POST("/users/forgot-password", passwordResetHandler.ForgotPassword)
+		public.POST("/users/reset-password", passwordResetHandler.ResetPassword)
+
 		// Post routes
-		v1Auth.POST("/posts", postHandler.Create)
+		public.GET("/posts/:id", postHandler.GetByID) // ✔️
+		public.GET("/posts", postHandler.List)        // ✔️
 	}
 
-	// Public routes that don't need auth
-	v1Public := router.Group("/api/v1")
+	private := v1.Group("")
+	private.Use(middleware.AuthMiddleware(cfg.JWT.AccessTokenSecret))
 	{
 		// Post routes
-		v1Public.GET("/posts/:id", postHandler.GetByID)
-		v1Public.GET("/posts", postHandler.List)
+		private.POST("/posts", postHandler.Create) // ✔️
 		
-		// User activation and password reset routes (public)
-		v1Public.GET("/users/activate", activationHandler.ActivateAccount)
-		v1Public.POST("/users/forgot-password", passwordResetHandler.ForgotPassword)
-		v1Public.POST("/users/reset-password", passwordResetHandler.ResetPassword)
+		// Profile routes
+		private.GET("/user/profile", userHandler.GetProfile)
+		private.PUT("/user/profile", userHandler.UpdateProfile)
+	}
+
+	contentRepo := gemini.NewGeminiRepo(cfg.GenAI.GeminiAPIKey, cfg.GenAI.GeminiModel)
+	contentUsecase := contentsvc.NewContentUsecase(contentRepo)
+	contentHandler := content.NewContentHandler(contentUsecase)
+
+	aiGenerate := router.Group("/api/v1/ai")
+	aiGenerate.Use(middleware.AuthMiddleware(cfg.JWT.AccessTokenSecret))
+
+	{
+		aiGenerate.POST("/generate", contentHandler.GenerateContent)
 	}
 
 	return router
-}
-
-func UserRoutes(cfg *config.Config, rg *gin.RouterGroup, handler *user.UserHandler) {
-	// Public routes
-	public := rg.Group("")
-	public.POST("/login", handler.Login)
-	public.POST("/refresh", handler.Refresh)
-	public.POST("/register", handler.Register)
-
-	// Private routes
-	private := rg.Group("")
-	private.Use(middleware.AuthMiddleware(cfg.JWT.AccessTokenSecret))
-	{
-		// Profile routes
-		private.GET("/profile", handler.GetProfile)
-		private.PUT("/profile", handler.UpdateProfile)
-	}
 }

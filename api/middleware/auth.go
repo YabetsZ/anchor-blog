@@ -1,39 +1,26 @@
 package middleware
 
 import (
+
 	"anchor-blog/internal/errors"
+
 	"anchor-blog/pkg/jwtutil"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-// AuthMiddleware validates JWT tokens and attaches user info to context
 func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Extract the Authorization header
 		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Authorization header is required",
-			})
-			c.Abort()
+
+		if authHeader == "" || len(authHeader) < 7 || authHeader[:7] != "Bearer " {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Missing or malformed token"})
 			return
 		}
 
-		// Check if it starts with "Bearer "
-		if !strings.HasPrefix(authHeader, "Bearer ") {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Authorization header must start with Bearer",
-			})
-			c.Abort()
-			return
-		}
-
-		// Extract the token
-		token := strings.TrimPrefix(authHeader, "Bearer ")
-		if token == "" {
+		tokenString := authHeader[7:]
+		if tokenString == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Token is required",
 			})
@@ -41,8 +28,9 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 			return
 		}
 
+
 		// Validate the token using JWT utilities
-		claims, err := jwtutil.ValidateToken(token, jwtSecret)
+		claims, err := jwtutil.ValidateToken(tokenString, jwtSecret)
 		if err != nil {
 			if err == errors.ErrInvalidToken {
 				c.JSON(http.StatusUnauthorized, gin.H{
@@ -57,12 +45,12 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 			return
 		}
 
+
 		// Extract user info from JWT claims and attach to context
-		c.Set("userID", claims.UserID)
+		c.Set("user_id", claims.UserID)
 		c.Set("username", claims.Username)
 		c.Set("role", claims.Role)
 
-		// Continue to next handler
 		c.Next()
 	}
 }

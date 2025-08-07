@@ -13,14 +13,16 @@ import (
 )
 
 func (ur *userRepository) CreateUser(ctx context.Context, user *entities.User) (string, error) {
-	userDoc, err := EntityToModel(user)
-	userDoc.ID = primitive.NewObjectID()
-	userDoc.UpdatedBy = userDoc.ID
+	user.ID = primitive.NewObjectID().Hex() // Needs to be modified
+	user.UpdatedBy = user.ID
+	user.UserPosts = make([]string, 0)
 
+	userDoc, err := EntityToModel(user)
 	if err != nil {
 		log.Printf("error while transfer user entity to user model %v", err.Error())
-		return "", errorr.ErrInternalServer
+		return "", err
 	}
+
 	_, err = ur.collection.InsertOne(ctx, userDoc)
 	if err != nil {
 		log.Printf("error while create new user %v", err.Error())

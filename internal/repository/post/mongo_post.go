@@ -26,11 +26,11 @@ func NewMongoPostRepository(collection *mongo.Collection) entities.IPostReposito
 }
 
 func (r *mongoPostRepository) Create(ctx context.Context, dPost *entities.Post) (*entities.Post, error) {
+	dPost.ID = primitive.NewObjectID().Hex()
 	post, err := FromDomainPost(dPost)
 	if err != nil {
 		return nil, err
 	}
-	post.ID = primitive.NewObjectID()
 	post.CreatedAt = time.Now()
 	post.UpdatedAt = time.Now()
 	post.Likes = []primitive.ObjectID{}
@@ -51,12 +51,12 @@ func (r *mongoPostRepository) FindByID(ctx context.Context, id string) (*entitie
 		log.Println("unable to convert id to object id", id)
 		return nil, AppError.ErrInvalidPostID
 	}
-	var post entities.Post
+	var post Post
 	err = r.collection.FindOne(ctx, bson.M{"_id": objId}).Decode(&post)
 	if err != nil {
 		return nil, err
 	}
-	return &post, nil
+	return ToDomainPost(&post), nil
 }
 
 func (r *mongoPostRepository) FindAll(ctx context.Context, opts entities.PaginationOptions) ([]*entities.Post, error) {
@@ -71,10 +71,14 @@ func (r *mongoPostRepository) FindAll(ctx context.Context, opts entities.Paginat
 	}
 	defer cursor.Close(ctx)
 
-	var posts []*entities.Post
+	var posts []Post
 	if err := cursor.All(ctx, &posts); err != nil {
 		return nil, err
 	}
 
-	return posts, nil
+	result := make([]*entities.Post, len(posts))
+	for idx, post := range posts {
+		result[idx] = ToDomainPost(&post)
+	}
+	return result, nil
 }

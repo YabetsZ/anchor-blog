@@ -5,6 +5,7 @@ import (
 
 	"anchor-blog/api"
 	"anchor-blog/api/handler"
+	"anchor-blog/api/handler/post"
 	"anchor-blog/api/handler/user"
 	"anchor-blog/config"
 	postrepo "anchor-blog/internal/repository/post"
@@ -47,8 +48,8 @@ func main() {
 	passwordResetService := usersvc.NewPasswordResetService(userRepository, passwordResetTokenRepo)
 
 	// Initialize handlers
-	userHandler := user.NewUserHandler(usersvc.NewUserServices(userRepository, tokenrepo.NewMongoTokenRepository(tokenCollection), cfg))
-	postHandler := handler.NewPostHandler(service.NewPostService(postrepo.NewMongoPostRepository(postCollection)))
+	userHandler := user.NewUserHandler(usersvc.NewUserServices(userrepo.NewUserRepository(userCollection), tokenrepo.NewMongoTokenRepository(tokenCollection), cfg))
+	postHandler := post.NewPostHandler(service.NewPostService(postrepo.NewMongoPostRepository(postCollection)))
 	activationHandler := handler.NewActivationHandler(activationService)
 	passwordResetHandler := handler.NewPasswordResetHandler(passwordResetService)
 

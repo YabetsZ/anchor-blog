@@ -2,6 +2,8 @@ package userrepo
 
 import (
 	"anchor-blog/internal/domain/entities"
+	"anchor-blog/internal/errors"
+	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -70,28 +72,31 @@ func ModelToEntity(model *User) entities.User {
 	}
 }
 
-func EntityToModel(ue *entities.User) (User, error) {
+func EntityToModel(ue *entities.User) (*User, error) {
 	id, err := primitive.ObjectIDFromHex(ue.ID)
 	if err != nil {
-		return User{}, err
+		log.Println("invalid user id: ", err.Error())
+		return nil, errors.ErrInvalidUserID
 	}
 	updatedBy, err := primitive.ObjectIDFromHex(ue.UpdatedBy)
 	if err != nil {
-		return User{}, nil
+		log.Println("invalid user id: ", err.Error())
+		return nil, errors.ErrInvalidUserID
 	}
 
 	userPosts := make([]primitive.ObjectID, len(ue.UserPosts))
 	for index, post := range ue.UserPosts {
 		userPosts[index], err = primitive.ObjectIDFromHex(post)
 		if err != nil {
-			return User{}, nil
+			log.Println("invalid user id: ", err.Error())
+			return nil, errors.ErrInvalidUserID
 		}
 	}
 	socialLinks := make([]SocialLink, len(ue.Profile.SocialLinks))
 	for index, socialLink := range ue.Profile.SocialLinks {
 		socialLinks[index] = SocialLink{Platform: socialLink.Platform, URL: socialLink.URL}
 	}
-	return User{
+	return &User{
 		ID:           id,
 		Username:     ue.Username,
 		FirstName:    ue.FirstName,
