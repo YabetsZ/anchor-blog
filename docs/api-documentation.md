@@ -362,6 +362,66 @@ GET /api/v1/posts?page=1&limit=10
 ]
 ```
 
+### GET /api/v1/posts/popular
+Get popular posts ordered by view count.
+
+**Request:**
+```http
+GET /api/v1/posts/popular?limit=10
+```
+
+**Response:**
+```json
+{
+  "posts": [
+    {
+      "id": "507f1f77bcf86cd799439012",
+      "title": "Most Popular Post",
+      "content": "This post has the most views...",
+      "author_id": "507f1f77bcf86cd799439011",
+      "tags": ["popular", "trending"],
+      "view_count": 1250,
+      "likes": ["507f1f77bcf86cd799439013"],
+      "dislikes": [],
+      "created_at": "2025-08-07T10:30:00Z",
+      "updated_at": "2025-08-07T10:30:00Z"
+    }
+  ],
+  "count": 10
+}
+```
+
+### GET /api/v1/posts/:id/views
+Get view count for a specific post.
+
+**Request:**
+```http
+GET /api/v1/posts/507f1f77bcf86cd799439012/views
+```
+
+**Response:**
+```json
+{
+  "post_id": "507f1f77bcf86cd799439012",
+  "view_count": 1250
+}
+```
+
+### GET /api/v1/stats/views
+Get total view statistics across all posts.
+
+**Request:**
+```http
+GET /api/v1/stats/views
+```
+
+**Response:**
+```json
+{
+  "total_views": 15420
+}
+```
+
 ---
 
 ## 🤖 AI Content Generation
@@ -525,8 +585,9 @@ if (pm.response.code === 200) {
 3. **Login**: Get access tokens
 4. **Profile**: Test profile endpoints
 5. **Posts**: Create and retrieve blog posts
-6. **AI Generation**: Test content generation
-7. **Account Management**: Test activation and password reset
+6. **View Tracking**: Test view analytics endpoints
+7. **AI Generation**: Test content generation
+8. **Account Management**: Test activation and password reset
 
 ---
 
@@ -537,5 +598,35 @@ if (pm.response.code === 200) {
 - JWT tokens expire after a set time (check your config)
 - Content generation requires valid API keys for Gemini AI
 - Email functionality requires SMTP configuration
+- **View Tracking**: Requires Redis server running on localhost:6379
+- **IP Throttling**: Each IP can only increment view count once per 24 hours
+- **Analytics**: View statistics update in real-time
+
+## 🔧 Redis Setup for View Tracking
+
+To test view tracking features, you need Redis running:
+
+### Install Redis:
+```bash
+# Windows (Chocolatey)
+choco install redis-64
+
+# macOS (Homebrew)  
+brew install redis
+
+# Ubuntu/Debian
+sudo apt-get install redis-server
+```
+
+### Start Redis:
+```bash
+redis-server
+```
+
+### Verify Redis:
+```bash
+redis-cli ping
+# Should return: PONG
+```
 
 Happy testing! 🚀
