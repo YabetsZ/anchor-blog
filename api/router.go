@@ -12,7 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-
 func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler *post.PostHandler, activationHandler *handler.ActivationHandler, passwordResetHandler *handler.PasswordResetHandler, contentHandler *content.ContentHandler) *gin.Engine {
 	router := gin.Default()
 
@@ -60,7 +59,6 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 	// AI Content Generation routes
 	aiGenerate := router.Group("/api/v1/ai")
 	aiGenerate.Use(middleware.AuthMiddleware(cfg.JWT.AccessTokenSecret))
-
 	{
 		aiGenerate.POST("/generate", contentHandler.GenerateContent)
 	}

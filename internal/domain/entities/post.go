@@ -16,3 +16,12 @@ type Post struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
+
+// content should collections of block
+/*
+	should content r
+		* Section
+		  - Heading
+		  -
+
+*/
