@@ -3,6 +3,7 @@ package post
 import (
 	"anchor-blog/api/handler"
 	postsvc "anchor-blog/internal/service/post"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -78,6 +79,22 @@ func (h *PostHandler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, posts)
 }
 
+func (h *PostHandler) Delete(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		handler.HandleError(c, http.StatusUnauthorized, "User not authenticated")
+		return
+	}
+	postID := c.Param("id")
+
+	err := h.postService.Delete(c, postID, userID.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "bad request"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "post deleted successfully"})
+}
+
 func (h *PostHandler) Like(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -88,6 +105,7 @@ func (h *PostHandler) Like(c *gin.Context) {
 
 	liked, err := h.postService.LikePost(c, postID, userID.(string))
 	if err != nil {
+		log.Println(err.Error())
 		handler.HandleHttpError(c, err)
 		return
 	}

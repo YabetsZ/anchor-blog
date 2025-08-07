@@ -3,6 +3,7 @@ package postrepo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"time"
 
@@ -86,7 +87,7 @@ func (r *mongoPostRepository) DeleteByID(ctx context.Context, id string) error {
 	if err != nil {
 		return AppError.ErrInternalServer
 	}
-	filter := bson.M{"id": objID}
+	filter := bson.M{"_id": objID}
 	_, err = r.collection.DeleteOne(ctx, filter)
 	if err != nil {
 		log.Printf("error while delete post %v", err.Error())
@@ -98,6 +99,7 @@ func (r *mongoPostRepository) DeleteByID(ctx context.Context, id string) error {
 func (r *mongoPostRepository) Creator(ctx context.Context, id string) (string, error) {
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		log.Println(err.Error())
 		return "", AppError.ErrInternalServer
 	}
 	filter := bson.M{"id": objID}
@@ -113,17 +115,20 @@ func (r *mongoPostRepository) Creator(ctx context.Context, id string) (string, e
 func (r *mongoPostRepository) UpdateByID(ctx context.Context, id string, post *entities.Post) error {
 	postDoc, err := FromDomainPost(post)
 	if err != nil {
+		log.Println(err.Error())
 		return AppError.ErrInternalServer
 	}
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		log.Println(err.Error())
 		return AppError.ErrInternalServer
 	}
 	var foundPost Post
 
-	filter := bson.M{"id": objID}
+	filter := bson.M{"_id": objID}
 	err = r.collection.FindOne(ctx, filter).Decode(&foundPost)
 	if err != nil {
+		log.Println(err.Error())
 		return AppError.ErrInternalServer
 	}
 
@@ -139,6 +144,7 @@ func (r *mongoPostRepository) UpdateByID(ctx context.Context, id string, post *e
 	_, err = r.collection.UpdateOne(ctx, filter, foundPost)
 
 	if err != nil {
+		log.Println(err.Error())
 		return AppError.ErrInternalServer
 	}
 	return nil
@@ -150,102 +156,83 @@ func (r *mongoPostRepository) CountViews(ctx context.Context, id string) error {
 func (r *mongoPostRepository) LikePost(ctx context.Context, postID, userID string) (bool, error) {
 	objID, err := primitive.ObjectIDFromHex(postID)
 	if err != nil {
-		return false, AppError.ErrInternalServer
+		return false, fmt.Errorf("invalid post ID: %w", err)
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		return false, AppError.ErrInternalServer
+		return false, fmt.Errorf("invalid user ID: %w", err)
 	}
 
-	filter := bson.M{"id": objID}
-	var post Post
-	err = r.collection.FindOne(ctx, filter).Decode(&post)
+	// Single atomic operation to:
+	// 1. Remove user from dislikes if present
+	// 2. Add user to likes if not already present
+	result, err := r.collection.UpdateOne(
+		ctx,
+		bson.M{
+			"_id":   objID,
+			"likes": bson.M{"$ne": userObjID}, // Only update if user hasn't already liked
+		},
+		bson.M{
+			"$addToSet": bson.M{"likes": userObjID},
+			"$pull":     bson.M{"dislikes": userObjID},
+		},
+	)
+
 	if err != nil {
-		return false, AppError.ErrInternalServer
+		return false, fmt.Errorf("database error: %w", err)
 	}
 
-	dislikes := post.Dislikes
-
-	for index := 0; index < len(dislikes); index++ {
-		if dislikes[index] == userObjID {
-			dislikes = append(dislikes[:index], dislikes[index+1:]...)
-			break
+	if result.ModifiedCount == 0 {
+		// Check if user already liked
+		var post Post
+		err := r.collection.FindOne(ctx, bson.M{"_id": objID, "likes": userObjID}).Decode(&post)
+		if err == nil {
+			return false, errors.New("already liked")
 		}
-	}
-
-	likes := post.Likes
-	found := false
-	for index := 0; index < len(likes); index++ {
-		if likes[index] == userObjID {
-			found = true
-		}
-	}
-	if !found {
-		likes = append(likes, userObjID)
-	} else {
-		return false, errors.New("already liked")
-	}
-
-	post.Dislikes = dislikes
-	post.Likes = likes
-
-	_, err = r.collection.UpdateOne(ctx, filter, post)
-	if err != nil {
-		return false, AppError.ErrInternalServer
+		return false, errors.New("post not found or no changes made")
 	}
 
 	return true, nil
 }
 
 func (r *mongoPostRepository) DislikePost(ctx context.Context, postID, userID string) (bool, error) {
-
 	objID, err := primitive.ObjectIDFromHex(postID)
 	if err != nil {
-		return false, AppError.ErrInternalServer
+		return false, fmt.Errorf("invalid post ID: %w", err)
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		return false, AppError.ErrInternalServer
+		return false, fmt.Errorf("invalid user ID: %w", err)
 	}
 
-	filter := bson.M{"id": objID}
-	var post Post
-	err = r.collection.FindOne(ctx, filter).Decode(&post)
+	// Single atomic operation to:
+	// 1. Remove user from likes if present
+	// 2. Add user to dislikes if not already present
+	result, err := r.collection.UpdateOne(
+		ctx,
+		bson.M{
+			"_id":      objID,
+			"dislikes": bson.M{"$ne": userObjID}, // Only update if user hasn't already disliked
+		},
+		bson.M{
+			"$addToSet": bson.M{"dislikes": userObjID},
+			"$pull":     bson.M{"likes": userObjID},
+		},
+	)
 
 	if err != nil {
-		return false, AppError.ErrInternalServer
+		return false, fmt.Errorf("database error: %w", err)
 	}
 
-	likes := post.Likes
-
-	for index := 0; index < len(likes); index++ {
-		if likes[index] == userObjID {
-			likes = append(likes[:index], likes[index+1:]...)
-			break
+	if result.ModifiedCount == 0 {
+		var post Post
+		err := r.collection.FindOne(ctx, bson.M{"_id": objID, "dislikes": userObjID}).Decode(&post)
+		if err == nil {
+			return false, errors.New("already disliked")
 		}
-	}
-
-	dislikes := post.Dislikes
-	found := false
-	for index := 0; index < len(dislikes); index++ {
-		if dislikes[index] == userObjID {
-			found = true
-		}
-	}
-	if !found {
-		dislikes = append(dislikes, userObjID)
-	} else {
-		return false, errors.New("already disliked")
-	}
-
-	post.Dislikes = dislikes
-	post.Likes = likes
-
-	_, err = r.collection.UpdateOne(ctx, filter, post)
-	if err != nil {
-		return false, AppError.ErrInternalServer
+		return false, errors.New("post not found or no changes made")
 	}
 
 	return true, nil
