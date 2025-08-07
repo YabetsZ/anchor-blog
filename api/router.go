@@ -11,13 +11,13 @@ import (
 	"anchor-blog/api/middleware"
 
 	"anchor-blog/config"
-
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler *post.PostHandler) *gin.Engine {
+
+func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler *handler.PostHandler, activationHandler *handler.ActivationHandler, passwordResetHandler *handler.PasswordResetHandler) *gin.Engine {
 	router := gin.Default()
 
 	// Health check endpoint
@@ -36,13 +36,15 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 		public.POST("/user/register", userHandler.Register) // ✔️
 		public.POST("/user/login", userHandler.Login)       // ✔️
 		public.POST("/refresh", userHandler.Refresh)        // ✔️
+    
+    // User activation and password reset routes
+		public.GET("/users/activate", activationHandler.ActivateAccount)
+		public.POST("/users/forgot-password", passwordResetHandler.ForgotPassword)
+		public.POST("/users/reset-password", passwordResetHandler.ResetPassword)
 
 		// Post routes
 		public.GET("/posts/:id", postHandler.GetByID) // ✔️
 		public.GET("/posts", postHandler.List)        // ✔️
-
-		// Account activation
-		// public.GET("activate", activationHandler.ActivateAccount)
 	}
 
 	private := v1.Group("")
