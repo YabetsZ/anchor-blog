@@ -50,6 +50,7 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 		private.POST("/posts/:id/like", postHandler.Like)
 		private.POST("/posts/:id/dislike", postHandler.Dislike)
 		private.DELETE("/posts/:id", postHandler.Delete)
+		private.PUT("/posts/:id", postHandler.Edit)
 
 		// Profile routes
 		private.GET("/user/profile", userHandler.GetProfile)

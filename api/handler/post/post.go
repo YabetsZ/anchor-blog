@@ -129,3 +129,27 @@ func (h *PostHandler) Dislike(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"disliked": liked})
 }
+
+func (h *PostHandler) Edit(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		handler.HandleError(c, http.StatusUnauthorized, "User not authenticated")
+		return
+	}
+	postID := c.Param("id")
+	var req PostDTO
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	post := MapDTOToPost(&req)
+
+	err := h.postService.Update(c, post, postID, userID.(string))
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "post edited successfully"})
+}

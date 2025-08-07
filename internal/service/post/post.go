@@ -62,3 +62,11 @@ func (s *PostService) Delete(ctx context.Context, postID, userID string) error {
 	}
 	return s.postRepo.DeleteByID(ctx, postID)
 }
+
+func (s *PostService) Update(ctx context.Context, post *entities.Post, postID, userID string) error {
+	authorID, err := s.postRepo.Creator(ctx, postID)
+	if authorID != userID || err != nil {
+		return errors.New("cannot edit the post")
+	}
+	return s.postRepo.UpdateByID(ctx, postID, post)
+}
