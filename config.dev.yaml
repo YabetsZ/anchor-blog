@@ -1,0 +1,26 @@
+server:
+    port: "8080"
+mongo:
+    uri: "mongodb+srv://anchor_blog:FxG9W9EY344IQWpb@project101.sa5ufgi.mongodb.net/?retryWrites=true&w=majority&appName=Project101"
+    database: "anchor"
+    user_collection: "user"
+    token_collection: "token"
+    post_collection: "post"
+jwt:
+    access_token_secret: "access token secret"
+    refresh_token_secret: "refresh token secret"
+hmac:
+    hmac_secret: "This is hmac secret"
+
+genai:
+    gemini_api_key: "AIzaSyCI_S18H9NCc-v0tTq0cL7i-dt4fSgsVO8"
+    gemini_model: "gemini-2.0-flash" 
+    min_words: 10
+    max_words: 2000
+
+redis:
+    host: "localhost"
+    port: "6379"
+    password: ""
+    db: 0
+    view_tracking_ttl: 86400  # 24 hours in seconds

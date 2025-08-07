@@ -211,3 +211,296 @@ func (r *mongoPostRepository) ResetViewCount(ctx context.Context, postID string)
 
 	return nil
 }
+// Update updates an existing post
+func (r *mongoPostRepository) Update(ctx context.Context, id string, post *entities.Post) (*entities.Post, error) {
+	objId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Println("unable to convert id to object id", id)
+		return nil, AppError.ErrInvalidPostID
+	}
+
+	// Convert entity to model
+	postModel, err := FromDomainPost(post)
+	if err != nil {
+		return nil, AppError.ErrInternalServer
+	}
+
+	postModel.UpdatedAt = time.Now()
+	
+	filter := bson.M{"_id": objId}
+	update := bson.M{"$set": bson.M{
+		"title":      postModel.Title,
+		"content":    postModel.Content,
+		"tags":       postModel.Tags,
+		"updated_at": postModel.UpdatedAt,
+	}}
+
+	result, err := r.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Printf("Error updating post %s: %v", id, err)
+		return nil, AppError.ErrInternalServer
+	}
+
+	if result.MatchedCount == 0 {
+		return nil, AppError.ErrNotFound
+	}
+
+	// Return updated post
+	return r.FindByID(ctx, id)
+}
+
+// Delete removes a post by ID
+func (r *mongoPostRepository) Delete(ctx context.Context, id string) error {
+	objId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Println("unable to convert id to object id", id)
+		return AppError.ErrInvalidPostID
+	}
+
+	filter := bson.M{"_id": objId}
+	result, err := r.collection.DeleteOne(ctx, filter)
+	if err != nil {
+		log.Printf("Error deleting post %s: %v", id, err)
+		return AppError.ErrInternalServer
+	}
+
+	if result.DeletedCount == 0 {
+		return AppError.ErrNotFound
+	}
+
+	return nil
+}
+
+// SearchByTitle searches posts by title
+func (r *mongoPostRepository) SearchByTitle(ctx context.Context, query string, opts entities.PaginationOptions) ([]*entities.Post, error) {
+	filter := bson.M{
+		"title": bson.M{
+			"$regex":   query,
+			"$options": "i", // case insensitive
+		},
+	}
+
+	return r.findWithFilter(ctx, filter, opts)
+}
+
+// SearchByAuthor searches posts by author ID
+func (r *mongoPostRepository) SearchByAuthor(ctx context.Context, authorID string, opts entities.PaginationOptions) ([]*entities.Post, error) {
+	authorObjID, err := primitive.ObjectIDFromHex(authorID)
+	if err != nil {
+		return nil, AppError.ErrInvalidUserID
+	}
+
+	filter := bson.M{"author_id": authorObjID}
+	return r.findWithFilter(ctx, filter, opts)
+}
+
+// FilterByTags filters posts by tags
+func (r *mongoPostRepository) FilterByTags(ctx context.Context, tags []string, opts entities.PaginationOptions) ([]*entities.Post, error) {
+	filter := bson.M{
+		"tags": bson.M{
+			"$in": tags,
+		},
+	}
+
+	return r.findWithFilter(ctx, filter, opts)
+}
+
+// FilterByDateRange filters posts by date range
+func (r *mongoPostRepository) FilterByDateRange(ctx context.Context, startDate, endDate string, opts entities.PaginationOptions) ([]*entities.Post, error) {
+	start, err := time.Parse("2006-01-02", startDate)
+	if err != nil {
+		return nil, AppError.ErrValidationFailed
+	}
+
+	end, err := time.Parse("2006-01-02", endDate)
+	if err != nil {
+		return nil, AppError.ErrValidationFailed
+	}
+
+	// Set end date to end of day
+	end = end.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
+
+	filter := bson.M{
+		"created_at": bson.M{
+			"$gte": start,
+			"$lte": end,
+		},
+	}
+
+	return r.findWithFilter(ctx, filter, opts)
+}
+
+// AddLike adds a like to a post
+func (r *mongoPostRepository) AddLike(ctx context.Context, postID, userID string) error {
+	postObjID, err := primitive.ObjectIDFromHex(postID)
+	if err != nil {
+		return AppError.ErrInvalidPostID
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return AppError.ErrInvalidUserID
+	}
+
+	filter := bson.M{"_id": postObjID}
+	update := bson.M{
+		"$addToSet": bson.M{"likes": userObjID},
+		"$pull":     bson.M{"dislikes": userObjID}, // Remove from dislikes if exists
+	}
+
+	_, err = r.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Printf("Error adding like to post %s: %v", postID, err)
+		return AppError.ErrInternalServer
+	}
+
+	return nil
+}
+
+// RemoveLike removes a like from a post
+func (r *mongoPostRepository) RemoveLike(ctx context.Context, postID, userID string) error {
+	postObjID, err := primitive.ObjectIDFromHex(postID)
+	if err != nil {
+		return AppError.ErrInvalidPostID
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return AppError.ErrInvalidUserID
+	}
+
+	filter := bson.M{"_id": postObjID}
+	update := bson.M{
+		"$pull": bson.M{"likes": userObjID},
+	}
+
+	_, err = r.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Printf("Error removing like from post %s: %v", postID, err)
+		return AppError.ErrInternalServer
+	}
+
+	return nil
+}
+
+// AddDislike adds a dislike to a post
+func (r *mongoPostRepository) AddDislike(ctx context.Context, postID, userID string) error {
+	postObjID, err := primitive.ObjectIDFromHex(postID)
+	if err != nil {
+		return AppError.ErrInvalidPostID
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return AppError.ErrInvalidUserID
+	}
+
+	filter := bson.M{"_id": postObjID}
+	update := bson.M{
+		"$addToSet": bson.M{"dislikes": userObjID},
+		"$pull":     bson.M{"likes": userObjID}, // Remove from likes if exists
+	}
+
+	_, err = r.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Printf("Error adding dislike to post %s: %v", postID, err)
+		return AppError.ErrInternalServer
+	}
+
+	return nil
+}
+
+// RemoveDislike removes a dislike from a post
+func (r *mongoPostRepository) RemoveDislike(ctx context.Context, postID, userID string) error {
+	postObjID, err := primitive.ObjectIDFromHex(postID)
+	if err != nil {
+		return AppError.ErrInvalidPostID
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return AppError.ErrInvalidUserID
+	}
+
+	filter := bson.M{"_id": postObjID}
+	update := bson.M{
+		"$pull": bson.M{"dislikes": userObjID},
+	}
+
+	_, err = r.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Printf("Error removing dislike from post %s: %v", postID, err)
+		return AppError.ErrInternalServer
+	}
+
+	return nil
+}
+
+// GetLikeStatus checks if user has liked or disliked a post
+func (r *mongoPostRepository) GetLikeStatus(ctx context.Context, postID, userID string) (bool, bool, error) {
+	postObjID, err := primitive.ObjectIDFromHex(postID)
+	if err != nil {
+		return false, false, AppError.ErrInvalidPostID
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return false, false, AppError.ErrInvalidUserID
+	}
+
+	var post Post
+	filter := bson.M{"_id": postObjID}
+	projection := bson.M{"likes": 1, "dislikes": 1}
+
+	err = r.collection.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&post)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return false, false, AppError.ErrNotFound
+		}
+		return false, false, AppError.ErrInternalServer
+	}
+
+	liked := false
+	disliked := false
+
+	for _, likeID := range post.Likes {
+		if likeID == userObjID {
+			liked = true
+			break
+		}
+	}
+
+	for _, dislikeID := range post.Dislikes {
+		if dislikeID == userObjID {
+			disliked = true
+			break
+		}
+	}
+
+	return liked, disliked, nil
+}
+
+// findWithFilter is a helper method for search and filter operations
+func (r *mongoPostRepository) findWithFilter(ctx context.Context, filter bson.M, opts entities.PaginationOptions) ([]*entities.Post, error) {
+	findOptions := options.Find()
+	findOptions.SetSort(bson.D{{Key: "created_at", Value: -1}}) // Sort by most recent
+	findOptions.SetSkip((opts.Page - 1) * opts.Limit)
+	findOptions.SetLimit(opts.Limit)
+
+	cursor, err := r.collection.Find(ctx, filter, findOptions)
+	if err != nil {
+		return nil, AppError.ErrInternalServer
+	}
+	defer cursor.Close(ctx)
+
+	var posts []Post
+	if err := cursor.All(ctx, &posts); err != nil {
+		return nil, AppError.ErrInternalServer
+	}
+
+	result := make([]*entities.Post, len(posts))
+	for idx, post := range posts {
+		result[idx] = ToDomainPost(&post)
+	}
+	return result, nil
+}

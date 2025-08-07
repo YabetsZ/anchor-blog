@@ -41,6 +41,8 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 		public.GET("/posts/:id", postHandler.GetByID) // ✔️
 		public.GET("/posts", postHandler.List)        // ✔️
 		public.GET("/posts/popular", postHandler.GetPopularPosts) // ✔️
+		public.GET("/posts/search", postHandler.SearchPosts) // ✔️
+		public.GET("/posts/filter", postHandler.FilterPosts) // ✔️
 		public.GET("/posts/:id/views", postHandler.GetPostViewCount) // ✔️
 		public.GET("/stats/views", postHandler.GetViewStats) // ✔️
 	}
@@ -50,10 +52,22 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 	{
 		// Post routes
 		private.POST("/posts", postHandler.Create) // ✔️
+		private.PUT("/posts/:id", postHandler.UpdatePost) // ✔️
+		private.DELETE("/posts/:id", postHandler.DeletePost) // ✔️
+		
+		// Post interaction routes
+		private.POST("/posts/:id/like", postHandler.LikePost) // ✔️
+		private.DELETE("/posts/:id/like", postHandler.UnlikePost) // ✔️
+		private.POST("/posts/:id/dislike", postHandler.DislikePost) // ✔️
+		private.DELETE("/posts/:id/dislike", postHandler.UndislikePost) // ✔️
+		private.GET("/posts/:id/like-status", postHandler.GetPostLikeStatus) // ✔️
 		
 		// Profile routes
 		private.GET("/user/profile", userHandler.GetProfile)
 		private.PUT("/user/profile", userHandler.UpdateProfile)
+		
+		// Auth routes
+		private.POST("/logout", userHandler.Logout) // ✔️
 	}
 
 	// AI Content Generation routes
