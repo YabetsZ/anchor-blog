@@ -2,6 +2,7 @@ package postrepo
 
 import (
 	"context"
+	"errors"
 	"log"
 	"time"
 
@@ -20,9 +21,7 @@ type mongoPostRepository struct {
 
 // NewMongoPostRepository creates a new post repository with MongoDB implementation.
 func NewMongoPostRepository(collection *mongo.Collection) entities.IPostRepository {
-	return &mongoPostRepository{
-		collection,
-	}
+	return &mongoPostRepository{collection}
 }
 
 func (r *mongoPostRepository) Create(ctx context.Context, dPost *entities.Post) (*entities.Post, error) {
@@ -41,7 +40,6 @@ func (r *mongoPostRepository) Create(ctx context.Context, dPost *entities.Post) 
 	if err != nil {
 		return nil, AppError.ErrInternalServer
 	}
-
 	return ToDomainPost(post), nil
 }
 
@@ -81,4 +79,174 @@ func (r *mongoPostRepository) FindAll(ctx context.Context, opts entities.Paginat
 		result[idx] = ToDomainPost(&post)
 	}
 	return result, nil
+}
+
+func (r *mongoPostRepository) DeleteByID(ctx context.Context, id string) error {
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return AppError.ErrInternalServer
+	}
+	filter := bson.M{"id": objID}
+	_, err = r.collection.DeleteOne(ctx, filter)
+	if err != nil {
+		log.Printf("error while delete post %v", err.Error())
+		return AppError.ErrInternalServer
+	}
+	return nil
+}
+
+func (r *mongoPostRepository) Creator(ctx context.Context, id string) (string, error) {
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return "", AppError.ErrInternalServer
+	}
+	filter := bson.M{"id": objID}
+	var post entities.Post
+	err = r.collection.FindOne(ctx, filter).Decode(&post)
+
+	if err != nil {
+		log.Printf("error while fetch post %v", err.Error())
+		return "", AppError.ErrInternalServer
+	}
+	return post.AuthorID, nil
+}
+func (r *mongoPostRepository) UpdateByID(ctx context.Context, id string, post *entities.Post) error {
+	postDoc, err := FromDomainPost(post)
+	if err != nil {
+		return AppError.ErrInternalServer
+	}
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return AppError.ErrInternalServer
+	}
+	var foundPost Post
+
+	filter := bson.M{"id": objID}
+	err = r.collection.FindOne(ctx, filter).Decode(&foundPost)
+	if err != nil {
+		return AppError.ErrInternalServer
+	}
+
+	if postDoc.Content != "" {
+		foundPost.Content = postDoc.Content
+	}
+	if postDoc.Title != "" {
+		foundPost.Title = postDoc.Title
+	}
+	if len(postDoc.Tags) > 0 {
+		foundPost.Tags = postDoc.Tags
+	}
+	_, err = r.collection.UpdateOne(ctx, filter, foundPost)
+
+	if err != nil {
+		return AppError.ErrInternalServer
+	}
+	return nil
+}
+
+func (r *mongoPostRepository) CountViews(ctx context.Context, id string) error {
+	return nil
+}
+func (r *mongoPostRepository) LikePost(ctx context.Context, postID, userID string) (bool, error) {
+	objID, err := primitive.ObjectIDFromHex(postID)
+	if err != nil {
+		return false, AppError.ErrInternalServer
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return false, AppError.ErrInternalServer
+	}
+
+	filter := bson.M{"id": objID}
+	var post Post
+	err = r.collection.FindOne(ctx, filter).Decode(&post)
+	if err != nil {
+		return false, AppError.ErrInternalServer
+	}
+
+	dislikes := post.Dislikes
+
+	for index := 0; index < len(dislikes); index++ {
+		if dislikes[index] == userObjID {
+			dislikes = append(dislikes[:index], dislikes[index+1:]...)
+			break
+		}
+	}
+
+	likes := post.Likes
+	found := false
+	for index := 0; index < len(likes); index++ {
+		if likes[index] == userObjID {
+			found = true
+		}
+	}
+	if !found {
+		likes = append(likes, userObjID)
+	} else {
+		return false, errors.New("already liked")
+	}
+
+	post.Dislikes = dislikes
+	post.Likes = likes
+
+	_, err = r.collection.UpdateOne(ctx, filter, post)
+	if err != nil {
+		return false, AppError.ErrInternalServer
+	}
+
+	return true, nil
+}
+
+func (r *mongoPostRepository) DislikePost(ctx context.Context, postID, userID string) (bool, error) {
+
+	objID, err := primitive.ObjectIDFromHex(postID)
+	if err != nil {
+		return false, AppError.ErrInternalServer
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return false, AppError.ErrInternalServer
+	}
+
+	filter := bson.M{"id": objID}
+	var post Post
+	err = r.collection.FindOne(ctx, filter).Decode(&post)
+
+	if err != nil {
+		return false, AppError.ErrInternalServer
+	}
+
+	likes := post.Likes
+
+	for index := 0; index < len(likes); index++ {
+		if likes[index] == userObjID {
+			likes = append(likes[:index], likes[index+1:]...)
+			break
+		}
+	}
+
+	dislikes := post.Dislikes
+	found := false
+	for index := 0; index < len(dislikes); index++ {
+		if dislikes[index] == userObjID {
+			found = true
+		}
+	}
+	if !found {
+		dislikes = append(dislikes, userObjID)
+	} else {
+		return false, errors.New("already disliked")
+	}
+
+	post.Dislikes = dislikes
+	post.Likes = likes
+
+	_, err = r.collection.UpdateOne(ctx, filter, post)
+	if err != nil {
+		return false, AppError.ErrInternalServer
+	}
+
+	return true, nil
 }

@@ -2,7 +2,7 @@ package post
 
 import (
 	"anchor-blog/api/handler"
-	"anchor-blog/internal/service"
+	postsvc "anchor-blog/internal/service/post"
 	"net/http"
 	"strconv"
 
@@ -10,10 +10,10 @@ import (
 )
 
 type PostHandler struct {
-	postService *service.PostService
+	postService *postsvc.PostService
 }
 
-func NewPostHandler(ps *service.PostService) *PostHandler {
+func NewPostHandler(ps *postsvc.PostService) *PostHandler {
 	return &PostHandler{postService: ps}
 }
 
@@ -76,4 +76,38 @@ func (h *PostHandler) List(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, posts)
+}
+
+func (h *PostHandler) Like(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		handler.HandleError(c, http.StatusUnauthorized, "User not authenticated")
+		return
+	}
+	postID := c.Param("id")
+
+	liked, err := h.postService.LikePost(c, postID, userID.(string))
+	if err != nil {
+		handler.HandleHttpError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"liked": liked})
+}
+
+func (h *PostHandler) Dislike(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		handler.HandleError(c, http.StatusUnauthorized, "User not authenticated")
+		return
+	}
+	postID := c.Param("id")
+
+	liked, err := h.postService.DislikePost(c, postID, userID.(string))
+	if err != nil {
+		handler.HandleHttpError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"disliked": liked})
 }

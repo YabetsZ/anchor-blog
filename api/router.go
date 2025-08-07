@@ -31,8 +31,8 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 		public.POST("/user/register", userHandler.Register) // ✔️
 		public.POST("/user/login", userHandler.Login)       // ✔️
 		public.POST("/refresh", userHandler.Refresh)        // ✔️
-    
-    // User activation and password reset routes
+
+		// User activation and password reset routes
 		public.GET("/users/activate", activationHandler.ActivateAccount)
 		public.POST("/users/forgot-password", passwordResetHandler.ForgotPassword)
 		public.POST("/users/reset-password", passwordResetHandler.ResetPassword)
@@ -47,7 +47,9 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 	{
 		// Post routes
 		private.POST("/posts", postHandler.Create) // ✔️
-		
+		private.POST("/posts/:id/like", postHandler.Like)
+		private.POST("/posts/:id/dislike", postHandler.Like)
+
 		// Profile routes
 		private.GET("/user/profile", userHandler.GetProfile)
 		private.PUT("/user/profile", userHandler.UpdateProfile)

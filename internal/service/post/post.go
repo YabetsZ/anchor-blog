@@ -1,7 +1,8 @@
-package service
+package postsvc
 
 import (
 	"context"
+	"errors"
 
 	"anchor-blog/internal/domain/entities"
 )
@@ -44,4 +45,20 @@ func (s *PostService) ListPosts(ctx context.Context, page, limit int64) ([]*enti
 	}
 
 	return s.postRepo.FindAll(ctx, opts)
+}
+
+func (s *PostService) LikePost(ctx context.Context, postID, userID string) (bool, error) {
+	return s.postRepo.LikePost(ctx, postID, userID)
+}
+
+func (s *PostService) DislikePost(ctx context.Context, postID, userID string) (bool, error) {
+	return s.postRepo.DislikePost(ctx, postID, userID)
+}
+
+func (s *PostService) Delete(ctx context.Context, postID, userID string) error {
+	authorID, err := s.postRepo.Creator(ctx, postID)
+	if authorID != userID || err != nil {
+		return errors.New("cannot edit the post")
+	}
+	return s.postRepo.DeleteByID(ctx, postID)
 }

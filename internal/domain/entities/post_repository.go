@@ -16,4 +16,13 @@ type IPostRepository interface {
 	FindByID(ctx context.Context, id string) (*Post, error)
 	FindAll(ctx context.Context, opts PaginationOptions) ([]*Post, error)
 	// add Update and Delete
+
+	DeleteByID(ctx context.Context, id string) error
+	Creator(ctx context.Context, id string) (string, error)
+	UpdateByID(ctx context.Context, id string, post *Post) error
+
+	// track popularity
+	CountViews(ctx context.Context, id string) error
+	LikePost(ctx context.Context, postID, userID string) (bool, error)
+	DislikePost(ctx context.Context, postID, userID string) (bool, error)
 }

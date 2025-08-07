@@ -13,8 +13,8 @@ import (
 	postrepo "anchor-blog/internal/repository/post"
 	tokenrepo "anchor-blog/internal/repository/token"
 	userrepo "anchor-blog/internal/repository/user"
-	"anchor-blog/internal/service"
 	contentsvc "anchor-blog/internal/service/content"
+	postsvc "anchor-blog/internal/service/post"
 	usersvc "anchor-blog/internal/service/user"
 	"anchor-blog/pkg/db"
 )
@@ -52,7 +52,7 @@ func main() {
 
 	// Initialize handlers
 	userHandler := user.NewUserHandler(usersvc.NewUserServices(userrepo.NewUserRepository(userCollection), tokenrepo.NewMongoTokenRepository(tokenCollection), cfg))
-	postHandler := post.NewPostHandler(service.NewPostService(postrepo.NewMongoPostRepository(postCollection)))
+	postHandler := post.NewPostHandler(postsvc.NewPostService(postrepo.NewMongoPostRepository(postCollection)))
 	activationHandler := handler.NewActivationHandler(activationService)
 	passwordResetHandler := handler.NewPasswordResetHandler(passwordResetService)
 	contentHandler := content.NewContentHandler(contentsvc.NewContentUsecase(gemini.NewGeminiRepo(cfg.GenAI.GeminiAPIKey, cfg.GenAI.GeminiModel)))
