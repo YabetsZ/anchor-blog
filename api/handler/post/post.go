@@ -3,6 +3,8 @@ package post
 import (
 	"anchor-blog/api/handler"
 	"anchor-blog/internal/service"
+	viewsvc "anchor-blog/internal/service/view"
+	"anchor-blog/pkg/utils"
 	"net/http"
 	"strconv"
 
@@ -10,11 +12,15 @@ import (
 )
 
 type PostHandler struct {
-	postService *service.PostService
+	postService        *service.PostService
+	viewTrackingService *viewsvc.ViewTrackingService
 }
 
-func NewPostHandler(ps *service.PostService) *PostHandler {
-	return &PostHandler{postService: ps}
+func NewPostHandler(ps *service.PostService, vts *viewsvc.ViewTrackingService) *PostHandler {
+	return &PostHandler{
+		postService:        ps,
+		viewTrackingService: vts,
+	}
 }
 
 type CreatePostRequest struct {
@@ -49,6 +55,17 @@ func (h *PostHandler) Create(c *gin.Context) {
 func (h *PostHandler) GetByID(c *gin.Context) {
 	postID := c.Param("id")
 
+	// Track the view with IP-based throttling
+	if h.viewTrackingService != nil {
+		clientIP := utils.GetClientIP(c)
+		err := h.viewTrackingService.TrackView(c.Request.Context(), postID, clientIP)
+		if err != nil {
+			// Log the error but don't fail the request
+			// View tracking is not critical for post retrieval
+			c.Header("X-View-Tracking-Error", "true")
+		}
+	}
+
 	post, err := h.postService.GetPostByID(c.Request.Context(), postID)
 	if err != nil {
 		handler.HandleHttpError(c, err)
@@ -76,4 +93,59 @@ func (h *PostHandler) List(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, posts)
+}
+
+// GetPopularPosts returns posts ordered by view count
+func (h *PostHandler) GetPopularPosts(c *gin.Context) {
+	limitStr := c.DefaultQuery("limit", "10")
+	limit, _ := strconv.Atoi(limitStr)
+
+	if limit <= 0 || limit > 100 {
+		limit = 10
+	}
+
+	posts, err := h.viewTrackingService.GetPopularPosts(c.Request.Context(), limit)
+	if err != nil {
+		handler.HandleHttpError(c, err)
+		return
+	}
+
+	res := make([]*PostDTO, len(posts))
+	for idx, post := range posts {
+		res[idx] = MapPostToDTO(post)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"posts": res,
+		"count": len(res),
+	})
+}
+
+// GetViewStats returns view statistics
+func (h *PostHandler) GetViewStats(c *gin.Context) {
+	totalViews, err := h.viewTrackingService.GetTotalViews(c.Request.Context())
+	if err != nil {
+		handler.HandleHttpError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"total_views": totalViews,
+	})
+}
+
+// GetPostViewCount returns the view count for a specific post
+func (h *PostHandler) GetPostViewCount(c *gin.Context) {
+	postID := c.Param("id")
+
+	viewCount, err := h.viewTrackingService.GetViewCount(c.Request.Context(), postID)
+	if err != nil {
+		handler.HandleHttpError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"post_id":    postID,
+		"view_count": viewCount,
+	})
 }

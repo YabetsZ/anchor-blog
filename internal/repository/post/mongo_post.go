@@ -82,3 +82,132 @@ func (r *mongoPostRepository) FindAll(ctx context.Context, opts entities.Paginat
 	}
 	return result, nil
 }
+
+// IncrementViewCount increments the view count for a specific post
+func (r *mongoPostRepository) IncrementViewCount(ctx context.Context, postID string) error {
+	objId, err := primitive.ObjectIDFromHex(postID)
+	if err != nil {
+		log.Println("unable to convert id to object id", postID)
+		return AppError.ErrInvalidPostID
+	}
+
+	filter := bson.M{"_id": objId}
+	update := bson.M{"$inc": bson.M{"view_count": 1}}
+
+	result, err := r.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Printf("Error incrementing view count for post %s: %v", postID, err)
+		return AppError.ErrInternalServer
+	}
+
+	if result.MatchedCount == 0 {
+		return AppError.ErrNotFound
+	}
+
+	return nil
+}
+
+// GetViewCount retrieves the current view count for a specific post
+func (r *mongoPostRepository) GetViewCount(ctx context.Context, postID string) (int, error) {
+	objId, err := primitive.ObjectIDFromHex(postID)
+	if err != nil {
+		log.Println("unable to convert id to object id", postID)
+		return 0, AppError.ErrInvalidPostID
+	}
+
+	var post Post
+	filter := bson.M{"_id": objId}
+	projection := bson.M{"view_count": 1}
+
+	err = r.collection.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&post)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return 0, AppError.ErrNotFound
+		}
+		return 0, AppError.ErrInternalServer
+	}
+
+	return post.ViewCount, nil
+}
+
+// GetTotalViews calculates the total view count across all posts
+func (r *mongoPostRepository) GetTotalViews(ctx context.Context) (int64, error) {
+	pipeline := []bson.M{
+		{
+			"$group": bson.M{
+				"_id":         nil,
+				"total_views": bson.M{"$sum": "$view_count"},
+			},
+		},
+	}
+
+	cursor, err := r.collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return 0, AppError.ErrInternalServer
+	}
+	defer cursor.Close(ctx)
+
+	var result []bson.M
+	if err := cursor.All(ctx, &result); err != nil {
+		return 0, AppError.ErrInternalServer
+	}
+
+	if len(result) == 0 {
+		return 0, nil
+	}
+
+	totalViews, ok := result[0]["total_views"].(int32)
+	if !ok {
+		return 0, nil
+	}
+
+	return int64(totalViews), nil
+}
+
+// GetPostsByViewCount retrieves posts ordered by view count (most viewed first)
+func (r *mongoPostRepository) GetPostsByViewCount(ctx context.Context, limit int) ([]*entities.Post, error) {
+	findOptions := options.Find()
+	findOptions.SetSort(bson.D{{Key: "view_count", Value: -1}}) // Sort by most viewed
+	findOptions.SetLimit(int64(limit))
+
+	cursor, err := r.collection.Find(ctx, bson.D{}, findOptions)
+	if err != nil {
+		return nil, AppError.ErrInternalServer
+	}
+	defer cursor.Close(ctx)
+
+	var posts []Post
+	if err := cursor.All(ctx, &posts); err != nil {
+		return nil, AppError.ErrInternalServer
+	}
+
+	result := make([]*entities.Post, len(posts))
+	for idx, post := range posts {
+		result[idx] = ToDomainPost(&post)
+	}
+	return result, nil
+}
+
+// ResetViewCount resets the view count for a specific post to zero
+func (r *mongoPostRepository) ResetViewCount(ctx context.Context, postID string) error {
+	objId, err := primitive.ObjectIDFromHex(postID)
+	if err != nil {
+		log.Println("unable to convert id to object id", postID)
+		return AppError.ErrInvalidPostID
+	}
+
+	filter := bson.M{"_id": objId}
+	update := bson.M{"$set": bson.M{"view_count": 0}}
+
+	result, err := r.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Printf("Error resetting view count for post %s: %v", postID, err)
+		return AppError.ErrInternalServer
+	}
+
+	if result.MatchedCount == 0 {
+		return AppError.ErrNotFound
+	}
+
+	return nil
+}
