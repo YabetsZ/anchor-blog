@@ -77,3 +77,15 @@ func (us *UserServices) Login(ctx context.Context, username, password string) (*
 		RefreshToken: refreshToken,
 	}, nil
 }
+// Logout invalidates all refresh tokens for a user
+func (us *UserServices) Logout(ctx context.Context, userID string) error {
+	// Delete all refresh tokens for the user
+	err := us.tokenRepo.DeleteAllByUserID(ctx, userID)
+	if err != nil {
+		log.Printf("failed to delete tokens for user %s: %v", userID, err)
+		return err
+	}
+
+	log.Printf("user %s logged out successfully", userID)
+	return nil
+}

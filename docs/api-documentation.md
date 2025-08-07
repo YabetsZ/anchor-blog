@@ -362,6 +362,119 @@ GET /api/v1/posts?page=1&limit=10
 ]
 ```
 
+### PUT /api/v1/posts/:id
+Update an existing blog post.
+
+**Request:**
+```http
+PUT /api/v1/posts/507f1f77bcf86cd799439012
+Authorization: Bearer <access-token>
+Content-Type: application/json
+
+{
+  "title": "Updated Post Title",
+  "content": "Updated post content...",
+  "tags": ["updated", "blog", "post"]
+}
+```
+
+**Response:**
+```json
+{
+  "id": "507f1f77bcf86cd799439012",
+  "title": "Updated Post Title",
+  "content": "Updated post content...",
+  "author_id": "507f1f77bcf86cd799439011",
+  "tags": ["updated", "blog", "post"],
+  "view_count": 5,
+  "likes": [],
+  "dislikes": [],
+  "created_at": "2025-08-07T10:30:00Z",
+  "updated_at": "2025-08-07T11:45:00Z"
+}
+```
+
+### DELETE /api/v1/posts/:id
+Delete a blog post.
+
+**Request:**
+```http
+DELETE /api/v1/posts/507f1f77bcf86cd799439012
+Authorization: Bearer <access-token>
+```
+
+**Response:**
+```json
+{
+  "message": "Post deleted successfully"
+}
+```
+
+### GET /api/v1/posts/search
+Search for blog posts by title or author.
+
+**Request:**
+```http
+GET /api/v1/posts/search?q=golang&type=title&page=1&limit=10
+```
+
+**Response:**
+```json
+{
+  "posts": [
+    {
+      "id": "507f1f77bcf86cd799439012",
+      "title": "Getting Started with Golang",
+      "content": "Golang is a powerful programming language...",
+      "author_id": "507f1f77bcf86cd799439011",
+      "tags": ["golang", "programming"],
+      "view_count": 15,
+      "likes": ["507f1f77bcf86cd799439013"],
+      "dislikes": [],
+      "created_at": "2025-08-07T10:30:00Z",
+      "updated_at": "2025-08-07T10:30:00Z"
+    }
+  ],
+  "count": 1,
+  "query": "golang",
+  "type": "title"
+}
+```
+
+### GET /api/v1/posts/filter
+Filter blog posts by tags or date range.
+
+**Request (Filter by tags):**
+```http
+GET /api/v1/posts/filter?tags=golang,programming&page=1&limit=10
+```
+
+**Request (Filter by date):**
+```http
+GET /api/v1/posts/filter?start_date=2025-08-01&end_date=2025-08-31&page=1&limit=10
+```
+
+**Response:**
+```json
+{
+  "posts": [
+    {
+      "id": "507f1f77bcf86cd799439012",
+      "title": "Getting Started with Golang",
+      "content": "Golang is a powerful programming language...",
+      "author_id": "507f1f77bcf86cd799439011",
+      "tags": ["golang", "programming"],
+      "view_count": 15,
+      "likes": ["507f1f77bcf86cd799439013"],
+      "dislikes": [],
+      "created_at": "2025-08-07T10:30:00Z",
+      "updated_at": "2025-08-07T10:30:00Z"
+    }
+  ],
+  "count": 1
+}
+```
+
 ### GET /api/v1/posts/popular
 Get popular posts ordered by view count.
 
@@ -419,6 +532,112 @@ GET /api/v1/stats/views
 ```json
 {
   "total_views": 15420
+}
+```
+
+---
+
+## 👍 Post Interactions
+
+### POST /api/v1/posts/:id/like
+Like a blog post.
+
+**Request:**
+```http
+POST /api/v1/posts/507f1f77bcf86cd799439012/like
+Authorization: Bearer <access-token>
+```
+
+**Response:**
+```json
+{
+  "message": "Post liked successfully"
+}
+```
+
+### DELETE /api/v1/posts/:id/like
+Remove like from a blog post.
+
+**Request:**
+```http
+DELETE /api/v1/posts/507f1f77bcf86cd799439012/like
+Authorization: Bearer <access-token>
+```
+
+**Response:**
+```json
+{
+  "message": "Post unliked successfully"
+}
+```
+
+### POST /api/v1/posts/:id/dislike
+Dislike a blog post.
+
+**Request:**
+```http
+POST /api/v1/posts/507f1f77bcf86cd799439012/dislike
+Authorization: Bearer <access-token>
+```
+
+**Response:**
+```json
+{
+  "message": "Post disliked successfully"
+}
+```
+
+### DELETE /api/v1/posts/:id/dislike
+Remove dislike from a blog post.
+
+**Request:**
+```http
+DELETE /api/v1/posts/507f1f77bcf86cd799439012/dislike
+Authorization: Bearer <access-token>
+```
+
+**Response:**
+```json
+{
+  "message": "Post undisliked successfully"
+}
+```
+
+### GET /api/v1/posts/:id/like-status
+Get user's like/dislike status for a post.
+
+**Request:**
+```http
+GET /api/v1/posts/507f1f77bcf86cd799439012/like-status
+Authorization: Bearer <access-token>
+```
+
+**Response:**
+```json
+{
+  "post_id": "507f1f77bcf86cd799439012",
+  "liked": true,
+  "disliked": false
+}
+```
+
+---
+
+## 🚪 User Authentication
+
+### POST /api/v1/logout
+Logout user and invalidate all refresh tokens.
+
+**Request:**
+```http
+POST /api/v1/logout
+Authorization: Bearer <access-token>
+```
+
+**Response:**
+```json
+{
+  "message": "Logged out successfully"
 }
 ```
 
@@ -584,10 +803,13 @@ if (pm.response.code === 200) {
 2. **Register**: Create a new user account
 3. **Login**: Get access tokens
 4. **Profile**: Test profile endpoints
-5. **Posts**: Create and retrieve blog posts
-6. **View Tracking**: Test view analytics endpoints
-7. **AI Generation**: Test content generation
-8. **Account Management**: Test activation and password reset
+5. **Posts**: Create, update, delete blog posts
+6. **Search & Filter**: Test search and filtering capabilities
+7. **Interactions**: Test like/dislike functionality
+8. **View Tracking**: Test view analytics endpoints
+9. **AI Generation**: Test content generation
+10. **Logout**: Test secure logout functionality
+11. **Account Management**: Test activation and password reset
 
 ---
 

@@ -82,3 +82,21 @@ func (uh *UserHandler) UpdateProfile(c *gin.Context) {
 		"message": "Profile updated successfully",
 	})
 }
+// Logout logs out the user by invalidating all refresh tokens
+func (uh *UserHandler) Logout(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		handler.HandleError(c, http.StatusUnauthorized, "User not authenticated")
+		return
+	}
+
+	err := uh.UserService.Logout(c.Request.Context(), userID.(string))
+	if err != nil {
+		handler.HandleHttpError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Logged out successfully",
+	})
+}
