@@ -85,68 +85,106 @@ func (r *mongoPostRepository) FindAll(ctx context.Context, opts entities.Paginat
 func (r *mongoPostRepository) DeleteByID(ctx context.Context, id string) error {
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return AppError.ErrInternalServer
+		log.Printf("invalid post ID format: %s, error: %v", id, err)
+		return fmt.Errorf("%w: invalid post ID", AppError.ErrBadRequest)
 	}
+
 	filter := bson.M{"_id": objID}
-	_, err = r.collection.DeleteOne(ctx, filter)
+	result, err := r.collection.DeleteOne(ctx, filter)
 	if err != nil {
-		log.Printf("error while delete post %v", err.Error())
-		return AppError.ErrInternalServer
+		log.Printf("failed to delete post %s: %v", id, err)
+		return fmt.Errorf("%w: failed to delete post", AppError.ErrInternalServer)
 	}
+
+	if result.DeletedCount == 0 {
+		log.Printf("post not found for deletion: %s", id)
+		return fmt.Errorf("%w: post not found", AppError.ErrNotFound)
+	}
+
 	return nil
 }
 
 func (r *mongoPostRepository) Creator(ctx context.Context, id string) (string, error) {
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		log.Println(err.Error())
-		return "", AppError.ErrInternalServer
+		log.Printf("invalid post ID format: %s, error: %v", id, err)
+		return "", fmt.Errorf("%w: invalid post ID", AppError.ErrBadRequest)
 	}
-	filter := bson.M{"id": objID}
+
+	// Fixed: Changed "id" to "_id" in the filter
+	filter := bson.M{"_id": objID}
 	var post entities.Post
 	err = r.collection.FindOne(ctx, filter).Decode(&post)
 
 	if err != nil {
-		log.Printf("error while fetch post %v", err.Error())
-		return "", AppError.ErrInternalServer
+		if err == mongo.ErrNoDocuments {
+			log.Printf("post not found: %s", id)
+			return "", fmt.Errorf("%w: post not found", AppError.ErrNotFound)
+		}
+		log.Printf("failed to fetch post %s: %v", id, err)
+		return "", fmt.Errorf("%w: failed to fetch post", AppError.ErrInternalServer)
 	}
+
+	if post.AuthorID == "" {
+		log.Printf("post has no author ID: %s", id)
+		return "", fmt.Errorf("%w: post author missing", AppError.ErrInternalServer)
+	}
+
 	return post.AuthorID, nil
 }
+
 func (r *mongoPostRepository) UpdateByID(ctx context.Context, id string, post *entities.Post) error {
-	postDoc, err := FromDomainPost(post)
-	if err != nil {
-		log.Println(err.Error())
-		return AppError.ErrInternalServer
+	if post == nil {
+		log.Println("nil post provided for update")
+		return fmt.Errorf("%w: nil post", AppError.ErrBadRequest)
 	}
+
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		log.Println(err.Error())
-		return AppError.ErrInternalServer
+		log.Printf("invalid post ID format: %s, error: %v", id, err)
+		return fmt.Errorf("%w: invalid post ID", AppError.ErrBadRequest)
 	}
-	var foundPost Post
 
-	filter := bson.M{"_id": objID}
-	err = r.collection.FindOne(ctx, filter).Decode(&foundPost)
+	postDoc, err := FromDomainPost(post)
 	if err != nil {
-		log.Println(err.Error())
-		return AppError.ErrInternalServer
+		log.Printf("failed to convert post to document: %v", err)
+		return fmt.Errorf("%w: invalid post data", AppError.ErrBadRequest)
 	}
 
+	// Build update document dynamically based on what fields are provided
+	update := bson.M{}
 	if postDoc.Content != "" {
-		foundPost.Content = postDoc.Content
+		update["content"] = postDoc.Content
 	}
 	if postDoc.Title != "" {
-		foundPost.Title = postDoc.Title
+		update["title"] = postDoc.Title
 	}
 	if len(postDoc.Tags) > 0 {
-		foundPost.Tags = postDoc.Tags
+		update["tags"] = postDoc.Tags
 	}
-	_, err = r.collection.UpdateOne(ctx, filter, foundPost)
+
+	if len(update) == 0 {
+		log.Println("no valid fields provided for update")
+		return fmt.Errorf("%w: no fields to update", AppError.ErrBadRequest)
+	}
+
+	filter := bson.M{"_id": objID}
+	result, err := r.collection.UpdateOne(
+		ctx,
+		filter,
+		bson.M{"$set": update},
+	)
 
 	if err != nil {
-		log.Println(err.Error())
-		return AppError.ErrInternalServer
+		log.Printf("failed to update post %s: %v", id, err)
+		return fmt.Errorf("%w: failed to update post", AppError.ErrInternalServer)
 	}
+
+	if result.MatchedCount == 0 {
+		log.Printf("post not found for update: %s", id)
+		return fmt.Errorf("%w: post not found", AppError.ErrNotFound)
+	}
+
 	return nil
 }
 
@@ -164,14 +202,11 @@ func (r *mongoPostRepository) LikePost(ctx context.Context, postID, userID strin
 		return false, fmt.Errorf("invalid user ID: %w", err)
 	}
 
-	// Single atomic operation to:
-	// 1. Remove user from dislikes if present
-	// 2. Add user to likes if not already present
 	result, err := r.collection.UpdateOne(
 		ctx,
 		bson.M{
 			"_id":   objID,
-			"likes": bson.M{"$ne": userObjID}, // Only update if user hasn't already liked
+			"likes": bson.M{"$ne": userObjID},
 		},
 		bson.M{
 			"$addToSet": bson.M{"likes": userObjID},
@@ -184,7 +219,6 @@ func (r *mongoPostRepository) LikePost(ctx context.Context, postID, userID strin
 	}
 
 	if result.ModifiedCount == 0 {
-		// Check if user already liked
 		var post Post
 		err := r.collection.FindOne(ctx, bson.M{"_id": objID, "likes": userObjID}).Decode(&post)
 		if err == nil {
@@ -207,14 +241,11 @@ func (r *mongoPostRepository) DislikePost(ctx context.Context, postID, userID st
 		return false, fmt.Errorf("invalid user ID: %w", err)
 	}
 
-	// Single atomic operation to:
-	// 1. Remove user from likes if present
-	// 2. Add user to dislikes if not already present
 	result, err := r.collection.UpdateOne(
 		ctx,
 		bson.M{
 			"_id":      objID,
-			"dislikes": bson.M{"$ne": userObjID}, // Only update if user hasn't already disliked
+			"dislikes": bson.M{"$ne": userObjID},
 		},
 		bson.M{
 			"$addToSet": bson.M{"dislikes": userObjID},

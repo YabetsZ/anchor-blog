@@ -14,14 +14,12 @@ var (
 	ErrValidationFailed   = errors.New("validation failed")
 	ErrInternalServer     = errors.New("internal server error")
 	ErrInvalidToken       = errors.New("invalid token")
-
-	ErrInvalidPostID = errors.New("invalid post id")
-
-	ErrNameCannotEmpty = errors.New("name cannot be empty")
-	ErrInvalidUsername = errors.New("invalid username")
-
-	ErrInvalidInput   = errors.New("invalid input parameters")
-	ErrContentBlocked = errors.New("content blocked by safety filters")
-	ErrPIILeak        = errors.New("potential PII detected")
-	ErrIllegalContent = errors.New("illegal content request")
+	ErrBadRequest         = errors.New("bad request")
+	ErrInvalidPostID      = errors.New("invalid post id")
+	ErrNameCannotEmpty    = errors.New("name cannot be empty")
+	ErrInvalidUsername    = errors.New("invalid username")
+	ErrInvalidInput       = errors.New("invalid input parameters")
+	ErrContentBlocked     = errors.New("content blocked by safety filters")
+	ErrPIILeak            = errors.New("potential PII detected")
+	ErrIllegalContent     = errors.New("illegal content request")
 )
