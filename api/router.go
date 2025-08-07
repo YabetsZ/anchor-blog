@@ -2,20 +2,17 @@ package api
 
 import (
 	"anchor-blog/api/handler"
-	"anchor-blog/api/handler/user"
-
 	"anchor-blog/api/handler/content"
-
+	"anchor-blog/api/handler/post"
+	"anchor-blog/api/handler/user"
 	"anchor-blog/api/middleware"
-
 	"anchor-blog/config"
-
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler *handler.PostHandler, contentHandler *content.ContentHandler) *gin.Engine {
+func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler *post.PostHandler, activationHandler *handler.ActivationHandler, passwordResetHandler *handler.PasswordResetHandler, contentHandler *content.ContentHandler) *gin.Engine {
 	router := gin.Default()
 
 	// Health check endpoint
@@ -34,20 +31,33 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 		public.POST("/user/register", userHandler.Register) // ✔️
 		public.POST("/user/login", userHandler.Login)       // ✔️
 		public.POST("/refresh", userHandler.Refresh)        // ✔️
+    
+    // User activation and password reset routes
+		public.GET("/users/activate", activationHandler.ActivateAccount)
+		public.POST("/users/forgot-password", passwordResetHandler.ForgotPassword)
+		public.POST("/users/reset-password", passwordResetHandler.ResetPassword)
 
 		// Post routes
-		public.GET("/posts/:id", postHandler.GetByID)
-		public.GET("/posts", postHandler.List)
-
-		// Account activation
-		// public.GET("activate", activationHandler.ActivateAccount)
+		public.GET("/posts/:id", postHandler.GetByID) // ✔️
+		public.GET("/posts", postHandler.List)        // ✔️
 	}
 
 	private := v1.Group("")
 	private.Use(middleware.AuthMiddleware(cfg.JWT.AccessTokenSecret))
 	{
-		private.POST("/posts", postHandler.Create)
-		private.POST("/ai/generate", contentHandler.GenerateContent)
+		// Post routes
+		private.POST("/posts", postHandler.Create) // ✔️
+		
+		// Profile routes
+		private.GET("/user/profile", userHandler.GetProfile)
+		private.PUT("/user/profile", userHandler.UpdateProfile)
+	}
+
+	// AI Content Generation routes
+	aiGenerate := router.Group("/api/v1/ai")
+	aiGenerate.Use(middleware.AuthMiddleware(cfg.JWT.AccessTokenSecret))
+	{
+		aiGenerate.POST("/generate", contentHandler.GenerateContent)
 	}
 
 	return router

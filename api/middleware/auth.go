@@ -1,7 +1,9 @@
 package middleware
 
 import (
-	"anchor-blog/api/handler"
+
+	"anchor-blog/internal/errors"
+
 	"anchor-blog/pkg/jwtutil"
 	"net/http"
 
@@ -25,16 +27,29 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		claim, err := jwtutil.ValidateToken(tokenString, jwtSecret)
+
+
+		// Validate the token using JWT utilities
+		claims, err := jwtutil.ValidateToken(tokenString, jwtSecret)
 		if err != nil {
-			handler.HandleHttpError(c, err)
+			if err == errors.ErrInvalidToken {
+				c.JSON(http.StatusUnauthorized, gin.H{
+					"error": "Invalid or expired token",
+				})
+			} else {
+				c.JSON(http.StatusUnauthorized, gin.H{
+					"error": "Token validation failed",
+				})
+			}
 			c.Abort()
 			return
 		}
 
-		c.Set("UserID", claim.UserID)
-		c.Set("Username", claim.Username)
-		c.Set("Role", claim.Role)
+
+		// Extract user info from JWT claims and attach to context
+		c.Set("user_id", claims.UserID)
+		c.Set("username", claims.Username)
+		c.Set("role", claims.Role)
 
 		c.Next()
 	}

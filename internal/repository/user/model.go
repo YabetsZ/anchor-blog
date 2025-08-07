@@ -15,9 +15,9 @@ type SocialLink struct {
 }
 
 type UserProfile struct {
-	Bio        string       `bson:"bio"`
-	PictureURL string       `bson:"picture_url"`
-	SocialLink []SocialLink `bson:"social_links"`
+	Bio         string       `bson:"bio"`
+	PictureURL  string       `bson:"picture_url"`
+	SocialLinks []SocialLink `bson:"social_links"`
 }
 
 type User struct {
@@ -39,9 +39,9 @@ type User struct {
 
 // :::::::::   Mapping functions   :::::::::::::::
 func ModelToEntity(model *User) entities.User {
-	socialLinks := make([]entities.SocialLink, len(model.Profile.SocialLink))
+	socialLinks := make([]entities.SocialLink, len(model.Profile.SocialLinks))
 
-	for index, socialLink := range model.Profile.SocialLink {
+	for index, socialLink := range model.Profile.SocialLinks {
 		socialLinks[index] = entities.SocialLink{Platform: socialLink.Platform, URL: socialLink.URL}
 	}
 
@@ -111,9 +111,9 @@ func EntityToModel(ue *entities.User) (*User, error) {
 		UpdatedBy:    updatedBy,
 		UserPosts:    userPosts,
 		Profile: UserProfile{
-			Bio:        ue.Profile.Bio,
-			PictureURL: ue.Profile.PictureURL,
-			SocialLink: socialLinks,
+			Bio:         ue.Profile.Bio,
+			PictureURL:  ue.Profile.PictureURL,
+			SocialLinks: socialLinks,
 		},
 	}, nil
 }
