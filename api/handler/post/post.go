@@ -1,6 +1,7 @@
-package handler
+package post
 
 import (
+	"anchor-blog/api/handler"
 	"anchor-blog/internal/service"
 	"net/http"
 	"strconv"
@@ -38,7 +39,7 @@ func (h *PostHandler) Create(c *gin.Context) {
 
 	post, err := h.postService.CreatePost(c.Request.Context(), req.Title, req.Content, authorIDHex.(string), req.Tags)
 	if err != nil {
-		HandleHttpError(c, err)
+		handler.HandleHttpError(c, err)
 		return
 	}
 
@@ -50,7 +51,7 @@ func (h *PostHandler) GetByID(c *gin.Context) {
 
 	post, err := h.postService.GetPostByID(c.Request.Context(), postID)
 	if err != nil {
-		HandleHttpError(c, err)
+		handler.HandleHttpError(c, err)
 		return
 	}
 
@@ -66,8 +67,12 @@ func (h *PostHandler) List(c *gin.Context) {
 
 	posts, err := h.postService.ListPosts(c.Request.Context(), page, limit)
 	if err != nil {
-		HandleHttpError(c, err)
+		handler.HandleHttpError(c, err)
 		return
+	}
+	res := make([]*PostDTO, len(posts))
+	for idx, post := range posts {
+		res[idx] = MapPostToDTO(post)
 	}
 
 	c.JSON(http.StatusOK, posts)

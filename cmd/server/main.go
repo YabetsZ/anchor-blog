@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"anchor-blog/api"
-	"anchor-blog/api/handler"
+	"anchor-blog/api/handler/post"
 	"anchor-blog/api/handler/user"
 	"anchor-blog/config"
 	postrepo "anchor-blog/internal/repository/post"
@@ -37,7 +37,7 @@ func main() {
 
 	// Initialize handlers
 	userHandler := user.NewUserHandler(usersvc.NewUserServices(userrepo.NewUserRepository(userCollection), tokenrepo.NewMongoTokenRepository(tokenCollection), cfg))
-	postHandler := handler.NewPostHandler(service.NewPostService(postrepo.NewMongoPostRepository(postCollection)))
+	postHandler := post.NewPostHandler(service.NewPostService(postrepo.NewMongoPostRepository(postCollection)))
 
 	// Start Server
 	router := api.SetupRouter(cfg, userHandler, postHandler)
