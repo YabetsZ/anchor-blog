@@ -37,7 +37,7 @@ func (h *PostHandler) Create(c *gin.Context) {
 	}
 
 	// Get author ID from context, set by the AuthMiddleware
-	authorIDHex, exists := c.Get("UserID")
+	authorIDHex, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
