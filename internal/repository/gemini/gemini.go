@@ -124,67 +124,81 @@ func (r *GeminiRepo) buildPrompt(req entities.ContentRequest) string {
 	audience := strings.Join(req.Audience, ", ")
 	wordCount := req.WordCount
 	if wordCount <= 0 {
-		wordCount = 100
+		wordCount = 1000
 	}
 	scope := sanitize(req.Scope, 1000)
 
-	return fmt.Sprintf(`Generate a comprehensive blog post in MARKDOWN format following these requirements:
+	return fmt.Sprintf(`Generate a professional blog post in STRICT CommonMark Markdown format. Follow these rules EXACTLY:
 
-# Content Requirements
-- Topic: %s
-- Tone: %s
-- Audience: %s
-- Word Count: %d
-- Scope: %s
+# FORMATTING RULES
+1. Use UNIX line endings (LF only, no CRLF)
+2. Exactly one blank line between sections
+3. No trailing whitespace on any line
+4. Headers must have exactly one space after #
+5. Lists must use hyphen with one space ("- item")
+6. Code blocks use triple backticks with language
+7. Links must use [text](url) format
 
-# Formatting Rules
-1. Use standard Markdown formatting
-2. Include these sections:
-   ## Title (H1)
-   ### Meta Description (plain text)
-   ## Outline (H2)
-   - Bullet points of key sections
-   ## Body Content (H2)
-   - Detailed paragraphs
-   ### Subsections (H3 as needed)
-   - Actionable items as bullet points
-   ## Enhancements (H2)
-   - SEO Keywords
-   - Content Gaps
-   - Audience Tips
+# REQUIRED STRUCTURE
+# [Title: 6-12 Words]
 
-# Content Guidelines
-- Provide 3-5 actionable tips
-- Include 6-12 relevant SEO keywords
-- Identify 2-3 content gaps
-- Offer audience-specific advice
-- Avoid any unsafe/prohibited content
-
-# Example Structure
-# Optimizing Developer Productivity
-
-Meta description: Practical strategies to improve coding efficiency and focus for software engineers.
+[1-sentence meta description under 155 chars]
 
 ## Outline
-- Time management techniques
-- Tooling recommendations
-- Team collaboration strategies
+- [Main point 1]
+- [Main point 2]
+- [Main point 3]
 
-## Body Content
-### Time Management
-- Implement Pomodoro technique...
-- Use time blocking...
+## Introduction
+[2-3 paragraphs introducing topic]
 
-### Recommended Tools
-- VS Code extensions...
-- CLI productivity tools...
+## [Section 1]
+[2-4 paragraphs]
+
+### [Subsection]
+- [Actionable tip 1]
+- [Actionable tip 2]
 
 ## Enhancements
-**SEO Keywords**: developer productivity, coding efficiency, time management  
-**Content Gaps**: Comparison of IDEs, Remote pair programming tools  
-**Audience Tips**: Adjust techniques for agile teams, Async communication practices
+**SEO Keywords**: [comma-separated terms]  
+**Content Gaps**: [missing aspects]  
+**Audience Tips**: [tailored suggestions]
 
-Now generate the content about: %s`, topic, tone, audience, wordCount, scope, topic)
+# CONTENT PARAMETERS
+Topic: %s
+Tone: %s
+Audience: %s
+Length: %d words (±15%%)
+Scope: %s
+
+# EXAMPLE OUTPUT
+# Effective Remote Team Management
+
+Meta description: Proven strategies to maintain productivity and collaboration in distributed teams.
+
+## Outline
+- Communication protocols
+- Productivity tools
+- Team building activities
+
+## Introduction
+Managing remote teams requires...
+
+## Communication Protocols
+Establish clear expectations...
+
+### Best Practices
+- Use async video updates
+- Document all decisions
+- Set core overlap hours
+
+## Enhancements
+**SEO Keywords**: remote work, team management, async communication  
+**Content Gaps**: Timezone management tools, Security considerations  
+**Audience Tips**: Managers: Schedule regular 1:1s, Developers: Use focus timers
+
+Now generate content about: %s`,
+		topic, tone, audience, wordCount, scope, topic)
 }
 
 func (r *GeminiRepo) createPayload(prompt string) map[string]interface{} {
