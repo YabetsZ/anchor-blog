@@ -2,6 +2,8 @@ package user
 
 import (
 	"anchor-blog/api/handler"
+	"anchor-blog/internal/domain/entities"
+	AppError "anchor-blog/internal/errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -25,4 +27,15 @@ func (uh *UserHandler) Refresh(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, loginResponse)
+}
+
+func (uh *UserHandler) SetLastSeen(c *gin.Context) {
+	userID := c.Param("id")
+
+	if err := uh.UserService.SetLastSeen(c, userID); err != nil {
+		c.JSON(http.StatusInternalServerError, entities.ErrorResponse{Error: AppError.ErrInternalServer.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, entities.SuccessResponse{Message: "success"})
+
 }

@@ -36,6 +36,7 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 		public.GET("/users/activate", activationHandler.ActivateAccount)
 		public.POST("/users/forgot-password", passwordResetHandler.ForgotPassword)
 		public.POST("/users/reset-password", passwordResetHandler.ResetPassword)
+		public.PATCH("users/last-seen/:id", userHandler.SetLastSeen)
 
 		// Post routes
 		public.GET("/posts/:id", postHandler.GetByID)                // ✔️

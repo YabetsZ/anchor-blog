@@ -36,3 +36,4 @@ build/
 
 # Go
 vendor/
+config.dev.yaml
