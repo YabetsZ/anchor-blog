@@ -4,6 +4,13 @@ import (
 	"time"
 )
 
+const (
+	RoleAdmin      = "admin"
+	RoleUnverified = "unverified"
+	RoleUser       = "user"
+	RoleSuperadmin = "superadmin"
+)
+
 type SocialLink struct {
 	Platform string
 	URL      string

@@ -132,30 +132,3 @@ func IsUserProfileEmpty(profile entities.UserProfile) bool {
 		profile.PictureURL == "" &&
 		len(profile.SocialLinks) == 0
 }
-
-func (ur *userRepository) UpdateUserRole(ctx context.Context, adminID, targetID, role string) error {
-	adminObjID, err := primitive.ObjectIDFromHex(adminID)
-	if err != nil {
-		log.Printf("invalid promoterID %s: %v", adminID, err)
-		return AppError.ErrInvalidUserID
-	}
-	targetObjID, err := primitive.ObjectIDFromHex(targetID)
-	if err != nil {
-		log.Printf("invalid targetID %s: %v", targetID, err)
-		return AppError.ErrInvalidUserID
-	}
-	filter := bson.M{
-		"_id": targetObjID,
-	}
-	update := bson.M{
-		"$set": bson.M{
-			"role":       role,
-			"updated_by": adminObjID,
-		},
-	}
-	_, err = ur.collection.UpdateOne(ctx, filter, update)
-	if err != nil {
-		return AppError.ErrInternalServer
-	}
-	return nil
-}

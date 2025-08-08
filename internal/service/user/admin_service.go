@@ -1,6 +1,7 @@
 package usersvc
 
 import (
+	"anchor-blog/internal/domain/entities"
 	AppError "anchor-blog/internal/errors"
 	"context"
 	"log"
@@ -15,8 +16,15 @@ func (us *UserServices) PromoteUserToAdmin(ctx context.Context, promoterID, targ
 	}
 
 	// Check if user is already an admin
-	if targetUser.Role == "admin" {
-		return AppError.ErrUserAlreadyAdmin
+	if targetUser.Role != entities.RoleUser {
+		switch targetUser.Role {
+		case entities.RoleAdmin:
+			return AppError.ErrUserAlreadyAdmin
+		case entities.RoleUnverified:
+			return AppError.ErrUserIsUnverified
+		default:
+			return AppError.ErrForbidden
+		}
 	}
 
 	return us.userRepo.UpdateUserRole(ctx, promoterID, targetUserID, "admin")
@@ -35,7 +43,7 @@ func (us *UserServices) DemoteAdminToUser(ctx context.Context, demoterID, target
 	}
 
 	// Check if user is already a regular user
-	if targetUser.Role == "user" {
+	if targetUser.Role != "admin" {
 		return AppError.ErrUserNotAdmin
 	}
 
