@@ -63,6 +63,7 @@ func (m *mockUserRepository) ChangeEmail(ctx context.Context, email string, newE
 func (m *mockUserRepository) SetRole(ctx context.Context, id string, role string) error { return nil }
 func (m *mockUserRepository) ActivateUserByID(ctx context.Context, id string) error { return nil }
 func (m *mockUserRepository) DeactivateUserByID(ctx context.Context, id string) error { return nil }
+func (m *mockUserRepository) UpdateUserRole(ctx context.Context, adminID, targetID, role string) error {return nil}
 
 func TestProfileService_GetUserProfile(t *testing.T) {
 	mockRepo := newMockUserRepository()
