@@ -62,3 +62,8 @@ func (us *UserServices) Refresh(ctx context.Context, refreshToken string) (*Logi
 		RefreshToken: newRefreshToken,
 	}, nil
 }
+
+func (us *UserServices) SetLastSeen(ctx context.Context, userID string) error {
+	now := time.Now()
+	return us.userRepo.SetLastSeen(ctx, userID, now)
+}
