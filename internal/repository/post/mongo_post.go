@@ -219,20 +219,12 @@ func (r *mongoPostRepository) Update(ctx context.Context, id string, post *entit
 		return nil, AppError.ErrInvalidPostID
 	}
 
-	// Convert entity to model
-	postModel, err := FromDomainPost(post)
-	if err != nil {
-		return nil, AppError.ErrInternalServer
-	}
-
-	postModel.UpdatedAt = time.Now()
-	
 	filter := bson.M{"_id": objId}
 	update := bson.M{"$set": bson.M{
-		"title":      postModel.Title,
-		"content":    postModel.Content,
-		"tags":       postModel.Tags,
-		"updated_at": postModel.UpdatedAt,
+		"title":      post.Title,
+		"content":    post.Content,
+		"tags":       post.Tags,
+		"updated_at": time.Now(),
 	}}
 
 	result, err := r.collection.UpdateOne(ctx, filter, update)
