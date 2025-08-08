@@ -4,6 +4,13 @@ import (
 	"time"
 )
 
+const (
+	RoleAdmin      = "admin"
+	RoleUnverified = "unverified"
+	RoleUser       = "user"
+	RoleSuperadmin = "superadmin"
+)
+
 type SocialLink struct {
 	Platform string
 	URL      string
@@ -22,7 +29,7 @@ type User struct {
 	LastName     string
 	Email        string
 	PasswordHash string
-	Role         string
+	Role         string // unverified, user, admin, superadmin
 	Activated    bool
 	LastSeen     time.Time
 	Profile      UserProfile

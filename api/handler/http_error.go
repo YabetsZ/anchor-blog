@@ -1,7 +1,7 @@
 package handler
 
 import (
-	errs "anchor-blog/internal/errors"
+	AppError "anchor-blog/internal/errors"
 	"errors"
 	"log"
 	"net/http"
@@ -16,23 +16,25 @@ type ErrorResponse struct {
 
 func HandleHttpError(c *gin.Context, err error) {
 	switch {
-	case errors.Is(err, errs.ErrNotFound),
-		errors.Is(err, errs.ErrUserNotFound):
+	case errors.Is(err, AppError.ErrNotFound),
+		errors.Is(err, AppError.ErrUserNotFound):
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-	case errors.Is(err, errs.ErrInvalidUserID),
-		errors.Is(err, errs.ErrInvalidPostID),
-		errors.Is(err, errs.ErrValidationFailed),
-		errors.Is(err, errs.ErrInvalidToken):
+	case errors.Is(err, AppError.ErrInvalidUserID),
+		errors.Is(err, AppError.ErrInvalidPostID),
+		errors.Is(err, AppError.ErrValidationFailed),
+		errors.Is(err, AppError.ErrInvalidToken):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	case errors.Is(err, errs.ErrEmailAlreadyExists),
-		errors.Is(err, errs.ErrUsernameTaken):
+	case errors.Is(err, AppError.ErrEmailAlreadyExists),
+		errors.Is(err, AppError.ErrUsernameTaken):
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
-	case errors.Is(err, errs.ErrInvalidCredentials),
-		errors.Is(err, errs.ErrUnauthorized):
+	case errors.Is(err, AppError.ErrInvalidCredentials),
+		errors.Is(err, AppError.ErrUnauthorized):
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-	case errors.Is(err, errs.ErrForbidden):
+	case errors.Is(err, AppError.ErrForbidden),
+		errors.Is(err, AppError.ErrUserIsUnverified),
+		errors.Is(err, AppError.ErrUserAlreadyAdmin):
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-	case errors.Is(err, errs.ErrInternalServer):
+	case errors.Is(err, AppError.ErrInternalServer):
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	default:
 		log.Printf("An unexpected error occurred: %v", err)

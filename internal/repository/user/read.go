@@ -18,7 +18,7 @@ func (ur *userRepository) GetUserByID(ctx context.Context, id string) (*entities
 		log.Printf("error while cast id to object id %v", err.Error())
 		return &entities.User{}, errorr.ErrInternalServer
 	}
-	filter := bson.M{"id": ObjID}
+	filter := bson.M{"_id": ObjID}
 	var foundUser User
 	err = ur.collection.FindOne(ctx, filter).Decode(&foundUser)
 	if err != nil {

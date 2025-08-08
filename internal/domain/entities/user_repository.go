@@ -27,6 +27,7 @@ type IUserWriterRepository interface {
 	EditUserByID(ctx context.Context, id string, user *User) error
 	DeleteUserByID(ctx context.Context, id string) error
 	SetLastSeen(ctx context.Context, id string, timestamp time.Time) error
+	UpdateUserRole(ctx context.Context, adminID, targetID, role string) error
 }
 
 // For Auth
