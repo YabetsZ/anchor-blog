@@ -9,7 +9,7 @@ import (
 
 func (h *UserHandler) PromoteUser(c *gin.Context) {
 	targetUserID := c.Param("id")
-	adminID := c.GetString("UserID")
+	adminID := c.GetString("user_id")
 
 	err := h.UserService.PromoteUserToAdmin(c.Request.Context(), adminID, targetUserID)
 	if err != nil {
@@ -21,7 +21,7 @@ func (h *UserHandler) PromoteUser(c *gin.Context) {
 
 func (h *UserHandler) DemoteUser(c *gin.Context) {
 	targetUserID := c.Param("id")
-	adminID := c.GetString("UserID")
+	adminID := c.GetString("user_id")
 
 	err := h.UserService.DemoteAdminToUser(c.Request.Context(), adminID, targetUserID)
 	if err != nil {

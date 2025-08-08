@@ -22,9 +22,9 @@ func RequireRole(requiredRole string) gin.HandlerFunc {
 		// Check if user has the required role
 		if userRole != requiredRole {
 			c.JSON(http.StatusForbidden, gin.H{
-				"error": "Insufficient permissions",
+				"error":         "Insufficient permissions",
 				"required_role": requiredRole,
-				"user_role": userRole,
+				"user_role":     userRole,
 			})
 			c.Abort()
 			return
@@ -36,8 +36,8 @@ func RequireRole(requiredRole string) gin.HandlerFunc {
 }
 
 // RequireAdmin is a convenience middleware for admin-only routes
-func RequireAdmin() gin.HandlerFunc {
-	return RequireRole("admin")
+func RequireSuperadmin() gin.HandlerFunc {
+	return RequireRole("superadmin")
 }
 
 // RequireUser is a convenience middleware for user-level routes (excludes unverified)
@@ -55,7 +55,7 @@ func RequireUser() gin.HandlerFunc {
 		// Allow both "user" and "admin" roles, but not "unverified"
 		if userRole != "user" && userRole != "admin" {
 			c.JSON(http.StatusForbidden, gin.H{
-				"error": "Account not verified or insufficient permissions",
+				"error":     "Account not verified or insufficient permissions",
 				"user_role": userRole,
 			})
 			c.Abort()

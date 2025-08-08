@@ -67,8 +67,8 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 		private.PUT("/user/profile", userHandler.UpdateProfile)
 
 		// Admin routes
-		private.PATCH("/admin/users/:id/promote", middleware.RequireAdmin(), userHandler.PromoteUser) // consider using superadmin
-		private.PATCH("/admin/users/:id/demote", middleware.RequireAdmin(), userHandler.DemoteUser)   // consider using superadmin
+		private.PATCH("/admin/users/:id/promote", middleware.RequireSuperadmin(), userHandler.PromoteUser) // consider using superadmin
+		private.PATCH("/admin/users/:id/demote", middleware.RequireSuperadmin(), userHandler.DemoteUser)   // consider using superadmin
 
 		// Auth routes
 		private.POST("/logout", userHandler.Logout) // ✔️
