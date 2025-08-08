@@ -3,6 +3,7 @@ package errors
 import "errors"
 
 var (
+
 	ErrNotFound               = errors.New("not found") // broad sense: the resource in question doesn't exist
 	ErrUserNotFound           = errors.New("user not found")
 	ErrInvalidUserID          = errors.New("invalid user id")
@@ -19,7 +20,7 @@ var (
 	ErrUserNotAdmin           = errors.New("user is not an admin")
 	ErrCannotDemoteThemselves = errors.New("admin can not demote themself")
 	ErrInvalidPostID          = errors.New("invalid post id")
-	ErrNameCannotEmpty        = errors.New("name cannot be empty")
+	ErrNameCannotEmpty        = errors.New("name cannot be less that three alphabet")
 	ErrInvalidUsername        = errors.New("invalid username")
 	ErrInvalidInput           = errors.New("invalid input parameters")
 	ErrContentBlocked         = errors.New("content blocked by safety filters")

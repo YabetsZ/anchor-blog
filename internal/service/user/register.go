@@ -49,7 +49,7 @@ func (us *UserServices) Register(ctx context.Context, userDto *UserDTO) (string,
 	}
 
 	firstName, lastName := strings.Trim(user.FirstName, " "), strings.Trim(user.LastName, " ")
-	if firstName == "" && lastName == "" {
+	if firstName == "" || lastName == "" || len(firstName) < 3 || len(lastName) < 3 {
 		return "", AppError.ErrNameCannotEmpty
 	}
 

@@ -36,7 +36,7 @@ func (ur *userRepository) GetUserByEmail(ctx context.Context, email string) (*en
 	err := ur.collection.FindOne(ctx, filter).Decode(&foundUser)
 	if err != nil {
 		log.Printf("error while find user %v", err.Error())
-		return &entities.User{}, errorr.ErrInternalServer
+		return &entities.User{}, errorr.ErrNotFound
 	}
 	user := ModelToEntity(&foundUser)
 	return &user, nil
@@ -48,7 +48,7 @@ func (ur *userRepository) GetUserByUsername(ctx context.Context, username string
 	err := ur.collection.FindOne(ctx, filter).Decode(&foundUser)
 	if err != nil {
 		log.Printf("error while find user %v", err.Error())
-		return &entities.User{}, errorr.ErrInternalServer
+		return &entities.User{}, errorr.ErrNotFound
 	}
 	user := ModelToEntity(&foundUser)
 	return &user, nil
@@ -134,12 +134,12 @@ func (ur *userRepository) GetUserRoleByID(ctx context.Context, id string) (strin
 		log.Printf("error while cast id to object id %v", err.Error())
 		return "", errorr.ErrInternalServer
 	}
-	filter := bson.M{"id": ObjID}
+	filter := bson.M{"_id": ObjID}
 	var foundUser User
 	err = ur.collection.FindOne(ctx, filter).Decode(&foundUser)
 	if err != nil {
 		log.Printf("error while count user  %v", err.Error())
-		return "", errorr.ErrInternalServer
+		return "", errorr.ErrNotFound
 	}
 
 	return foundUser.Role, nil

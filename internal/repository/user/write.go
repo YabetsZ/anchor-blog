@@ -35,7 +35,7 @@ func (ur *userRepository) DeleteUserByID(ctx context.Context, id string) error {
 	if err != nil {
 		return AppError.ErrInternalServer
 	}
-	filter := bson.M{"id": objID}
+	filter := bson.M{"_id": objID}
 	_, err = ur.collection.DeleteOne(ctx, filter)
 	if err != nil {
 		log.Printf("error while delete user %v", err.Error())
@@ -50,7 +50,7 @@ func (ur *userRepository) SetLastSeen(ctx context.Context, id string, timestamp 
 		log.Printf("error while cast id to object id %v", err.Error())
 		return AppError.ErrInternalServer
 	}
-	filter := bson.M{"id": objID}
+	filter := bson.M{"_id": objID}
 
 	var foundUser User
 

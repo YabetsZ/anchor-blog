@@ -36,7 +36,8 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 		public.GET("/users/activate", activationHandler.ActivateAccount)
 		public.POST("/users/forgot-password", passwordResetHandler.ForgotPassword)
 		public.POST("/users/reset-password", passwordResetHandler.ResetPassword)
-		public.PATCH("users/last-seen/:id", userHandler.SetLastSeen)
+		public.PATCH("/users/last-seen/:id", userHandler.SetLastSeen)
+
 
 		// Post routes
 		public.GET("/posts/:id", postHandler.GetByID)                // ✔️
@@ -66,6 +67,7 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 		// Profile routes
 		private.GET("/user/profile", userHandler.GetProfile)
 		private.PUT("/user/profile", userHandler.UpdateProfile)
+
 
 		// Admin routes
 		private.PATCH("/admin/users/:id/promote", middleware.RequireSuperadmin(), userHandler.PromoteUser) // ✔️
