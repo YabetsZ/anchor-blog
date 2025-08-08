@@ -12,7 +12,6 @@ import (
 )
 
 func (us *UserServices) Register(ctx context.Context, userDto *UserDTO) (string, error) {
-
 	user := DTOToEntity(*userDto)
 
 	passwordHash, err := hashutil.HashPassword(userDto.Password)
@@ -60,7 +59,16 @@ func (us *UserServices) Register(ctx context.Context, userDto *UserDTO) (string,
 	user.Email = email
 
 	user.Activated = false
-	user.Role = "unverified"
+	// Check if the user is the first one to the system
+	count, err := us.userRepo.CountAllUsers(ctx)
+	if err != nil {
+		return "", err
+	}
+	if count == 0 {
+		user.Role = "superadmin" // assumed superadmin doesn't want verification
+	} else {
+		user.Role = "unverified"
+	}
 
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
