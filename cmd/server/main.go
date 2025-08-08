@@ -15,8 +15,8 @@ import (
 	postrepo "anchor-blog/internal/repository/post"
 	tokenrepo "anchor-blog/internal/repository/token"
 	userrepo "anchor-blog/internal/repository/user"
-	"anchor-blog/internal/service"
 	contentsvc "anchor-blog/internal/service/content"
+	postsvc "anchor-blog/internal/service/post"
 	usersvc "anchor-blog/internal/service/user"
 	viewsvc "anchor-blog/internal/service/view"
 	"anchor-blog/pkg/db"
@@ -47,11 +47,11 @@ func main() {
 
 	// Initialize Redis client
 	redisClient := redisclient.NewRedisClient(cfg.Redis.Host, cfg.Redis.Port, cfg.Redis.Password, cfg.Redis.DB)
-	
+
 	// Test Redis connection
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	if err := redisClient.Ping(ctx); err != nil {
 		log.Printf("⚠️  Redis connection failed: %v (continuing without Redis)", err)
 		redisClient = nil // Set to nil so handlers can handle gracefully
@@ -68,7 +68,7 @@ func main() {
 	// Initialize services
 	activationService := usersvc.NewActivationService(userRepository, activationTokenRepo)
 	passwordResetService := usersvc.NewPasswordResetService(userRepository, passwordResetTokenRepo)
-	
+
 	// Initialize view tracking service (with Redis if available)
 	var viewTrackingService *viewsvc.ViewTrackingService
 	if redisClient != nil {
@@ -80,7 +80,7 @@ func main() {
 
 	// Initialize handlers
 	userHandler := user.NewUserHandler(usersvc.NewUserServices(userrepo.NewUserRepository(userCollection), tokenrepo.NewMongoTokenRepository(tokenCollection), cfg))
-	postHandler := post.NewPostHandler(service.NewPostService(postRepository), viewTrackingService)
+	postHandler := post.NewPostHandler(postsvc.NewPostService(postRepository), viewTrackingService)
 	activationHandler := handler.NewActivationHandler(activationService)
 	passwordResetHandler := handler.NewPasswordResetHandler(passwordResetService)
 	contentHandler := content.NewContentHandler(contentsvc.NewContentUsecase(gemini.NewGeminiRepo(cfg.GenAI.GeminiAPIKey, cfg.GenAI.GeminiModel)))

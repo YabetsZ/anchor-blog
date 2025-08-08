@@ -1,4 +1,4 @@
-package service
+package postsvc
 
 import (
 	"context"
@@ -45,6 +45,7 @@ func (s *PostService) ListPosts(ctx context.Context, page, limit int64) ([]*enti
 
 	return s.postRepo.FindAll(ctx, opts)
 }
+
 // UpdatePost updates an existing post
 func (s *PostService) UpdatePost(ctx context.Context, id string, title, content string, tags []string) (*entities.Post, error) {
 	post := &entities.Post{

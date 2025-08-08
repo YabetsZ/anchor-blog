@@ -3,7 +3,7 @@ package post
 import (
 	"anchor-blog/api/handler"
 	"anchor-blog/internal/domain/entities"
-	"anchor-blog/internal/service"
+	postsvc "anchor-blog/internal/service/post"
 	viewsvc "anchor-blog/internal/service/view"
 	"anchor-blog/pkg/utils"
 	"net/http"
@@ -14,13 +14,13 @@ import (
 )
 
 type PostHandler struct {
-	postService        *service.PostService
+	postService         *postsvc.PostService
 	viewTrackingService *viewsvc.ViewTrackingService
 }
 
-func NewPostHandler(ps *service.PostService, vts *viewsvc.ViewTrackingService) *PostHandler {
+func NewPostHandler(ps *postsvc.PostService, vts *viewsvc.ViewTrackingService) *PostHandler {
 	return &PostHandler{
-		postService:        ps,
+		postService:         ps,
 		viewTrackingService: vts,
 	}
 }
@@ -151,10 +151,11 @@ func (h *PostHandler) GetPostViewCount(c *gin.Context) {
 		"view_count": viewCount,
 	})
 }
+
 // UpdatePost updates an existing post
 func (h *PostHandler) UpdatePost(c *gin.Context) {
 	postID := c.Param("id")
-	
+
 	// Get user ID from context
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -192,7 +193,7 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 // DeletePost deletes a post
 func (h *PostHandler) DeletePost(c *gin.Context) {
 	postID := c.Param("id")
-	
+
 	// Get user ID from context
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -304,7 +305,7 @@ func (h *PostHandler) FilterPosts(c *gin.Context) {
 // LikePost likes a post
 func (h *PostHandler) LikePost(c *gin.Context) {
 	postID := c.Param("id")
-	
+
 	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
@@ -323,7 +324,7 @@ func (h *PostHandler) LikePost(c *gin.Context) {
 // UnlikePost unlikes a post
 func (h *PostHandler) UnlikePost(c *gin.Context) {
 	postID := c.Param("id")
-	
+
 	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
@@ -342,7 +343,7 @@ func (h *PostHandler) UnlikePost(c *gin.Context) {
 // DislikePost dislikes a post
 func (h *PostHandler) DislikePost(c *gin.Context) {
 	postID := c.Param("id")
-	
+
 	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
@@ -361,7 +362,7 @@ func (h *PostHandler) DislikePost(c *gin.Context) {
 // UndislikePost removes dislike from a post
 func (h *PostHandler) UndislikePost(c *gin.Context) {
 	postID := c.Param("id")
-	
+
 	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
@@ -380,7 +381,7 @@ func (h *PostHandler) UndislikePost(c *gin.Context) {
 // GetPostLikeStatus gets the like status for a post
 func (h *PostHandler) GetPostLikeStatus(c *gin.Context) {
 	postID := c.Param("id")
-	
+
 	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
@@ -394,8 +395,8 @@ func (h *PostHandler) GetPostLikeStatus(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"post_id":   postID,
-		"liked":     liked,
-		"disliked":  disliked,
+		"post_id":  postID,
+		"liked":    liked,
+		"disliked": disliked,
 	})
 }
