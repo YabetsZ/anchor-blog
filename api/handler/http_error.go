@@ -34,6 +34,9 @@ func HandleHttpError(c *gin.Context, err error) {
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 	case errors.Is(err, errs.ErrInternalServer):
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+	case errors.Is(err, errs.ErrNameCannotEmpty):
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	default:
 		log.Printf("An unexpected error occurred: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error occurred"})

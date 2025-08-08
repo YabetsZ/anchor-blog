@@ -17,7 +17,7 @@ var (
 
 	ErrInvalidPostID = errors.New("invalid post id")
 
-	ErrNameCannotEmpty = errors.New("name cannot be empty")
+	ErrNameCannotEmpty = errors.New("name cannot be less that three alphabet")
 	ErrInvalidUsername = errors.New("invalid username")
 
 	ErrInvalidInput   = errors.New("invalid input parameters")

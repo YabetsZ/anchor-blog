@@ -15,7 +15,7 @@ func (ur *userRepository) SetRole(ctx context.Context, id string, role string) e
 		log.Printf("error when cast id to object id %v \n", err.Error())
 		return errorr.ErrInternalServer
 	}
-	filter := bson.M{"id": objID}
+	filter := bson.M{"_id": objID}
 	var foundUser User
 	err = ur.collection.FindOne(ctx, filter).Decode(&foundUser)
 	if err != nil {
@@ -37,7 +37,7 @@ func (ur *userRepository) ActivateUserByID(ctx context.Context, id string) error
 		log.Printf("error when cast id to object id %v \n", err.Error())
 		return errorr.ErrInternalServer
 	}
-	filter := bson.M{"id": objID}
+	filter := bson.M{"_id": objID}
 	var foundUser User
 	err = ur.collection.FindOne(ctx, filter).Decode(&foundUser)
 	if err != nil {
@@ -58,7 +58,7 @@ func (ur *userRepository) DeactivateUserByID(ctx context.Context, id string) err
 	if err != nil {
 		return err
 	}
-	filter := bson.M{"id": objID}
+	filter := bson.M{"_id": objID}
 	var foundUser User
 	err = ur.collection.FindOne(ctx, filter).Decode(&foundUser)
 	if err != nil {

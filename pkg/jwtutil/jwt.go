@@ -63,6 +63,7 @@ func ValidateToken(tokenString string, secret string) (*entities.CustomClaims, e
 		return []byte(secret), nil
 	})
 	if err != nil {
+		log.Println(err.Error())
 		return nil, err
 	}
 

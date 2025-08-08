@@ -50,7 +50,7 @@ func (ur *userRepository) ChangePassword(ctx context.Context, id string, newPass
 		log.Printf("error when cast id to object id %v \n", err.Error())
 		return errorr.ErrInternalServer
 	}
-	filter := bson.M{"id": objID}
+	filter := bson.M{"_id": objID}
 
 	var foundUser User
 	err = ur.collection.FindOne(ctx, filter).Decode(&foundUser)
