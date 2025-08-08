@@ -1,0 +1,1321 @@
+openapi: 3.0.3
+info:
+    title: Anchor Blog API
+    description: A comprehensive blogging platform API with user management, post management, AI content generation, and social features.
+    version: 1.0.0
+    contact:
+        name: Anchor Blog Team
+        email: support@anchorblog.com
+    license:
+        name: MIT
+        url: https://opensource.org/licenses/MIT
+
+servers:
+    - url: http://localhost:8080/api/v1
+      description: Development server
+    # - url: https://api.anchorblog.com/api/v1
+    #   description: Production server
+
+tags:
+    - name: Health
+      description: System health check
+    - name: Authentication
+      description: User authentication and authorization
+    - name: User Management
+      description: User profile and account management
+    - name: Posts
+      description: Blog post operations
+    - name: Post Interactions
+      description: Post likes, dislikes, and interactions
+    - name: Search & Filter
+      description: Post search and filtering functionality
+    - name: Statistics
+      description: View tracking and analytics
+    - name: Password Reset
+      description: Password reset functionality
+    - name: Account Activation
+      description: Account activation
+    - name: AI Content Generation
+      description: AI-powered content generation
+    - name: Admin
+      description: Administrative operations
+
+paths:
+    /health:
+        get:
+            tags:
+                - Health
+            summary: Health check endpoint
+            description: Check if the API is running and healthy
+            responses:
+                "200":
+                    description: Service is healthy
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    status:
+                                        type: string
+                                        example: "OK"
+
+    # Authentication Endpoints
+    /user/register:
+        post:
+            tags:
+                - Authentication
+            summary: Register a new user
+            description: Create a new user account
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/RegisterRequest"
+            responses:
+                "200":
+                    description: User registered successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/RegisterResponse"
+                "400":
+                    description: Invalid input
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+    /user/login:
+        post:
+            tags:
+                - Authentication
+            summary: User login
+            description: Authenticate user and return access tokens
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/LoginRequest"
+            responses:
+                "200":
+                    description: Login successful
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/LoginResponse"
+                "400":
+                    description: Invalid credentials
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+    /refresh:
+        post:
+            tags:
+                - Authentication
+            summary: Refresh access token
+            description: Get a new access token using refresh token
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                refresh_token:
+                                    type: string
+                            required:
+                                - refresh_token
+            responses:
+                "200":
+                    description: Token refreshed successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/LoginResponse"
+                "401":
+                    description: Invalid refresh token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+    /logout:
+        post:
+            tags:
+                - Authentication
+            summary: User logout
+            description: Invalidate all refresh tokens for the user
+            security:
+                - BearerAuth: []
+            responses:
+                "200":
+                    description: Logout successful
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: "Logged out successfully"
+                "401":
+                    description: User not authenticated
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+    # User Profile Management
+    /user/profile:
+        get:
+            tags:
+                - User Management
+            summary: Get user profile
+            description: Retrieve the authenticated user's profile information
+            security:
+                - BearerAuth: []
+            responses:
+                "200":
+                    description: Profile retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                    data:
+                                        $ref: "#/components/schemas/ProfileResponse"
+                "401":
+                    description: User not authenticated
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+        put:
+            tags:
+                - User Management
+            summary: Update user profile
+            description: Update the authenticated user's profile information
+            security:
+                - BearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/UpdateProfileRequest"
+            responses:
+                "200":
+                    description: Profile updated successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    success:
+                                        type: boolean
+                                    data:
+                                        $ref: "#/components/schemas/ProfileResponse"
+                                    message:
+                                        type: string
+                                        example: "Profile updated successfully"
+                "400":
+                    description: Invalid request body
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+    # Password Reset
+    /users/forgot-password:
+        post:
+            tags:
+                - Password Reset
+            summary: Request password reset
+            description: Send password reset email to user
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/ForgotPasswordRequest"
+            responses:
+                "200":
+                    description: Password reset email sent
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: "Password reset email sent successfully"
+                                    email:
+                                        type: string
+                "400":
+                    description: Invalid email or failed to process request
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+    /users/reset-password:
+        post:
+            tags:
+                - Password Reset
+            summary: Reset password
+            description: Reset user password using reset token
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/ResetPasswordRequest"
+            responses:
+                "200":
+                    description: Password reset successful
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: "Password reset successfully"
+                                    user:
+                                        type: object
+                                        properties:
+                                            id:
+                                                type: string
+                                            username:
+                                                type: string
+                                            email:
+                                                type: string
+                "400":
+                    description: Invalid token or failed to reset password
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+    # Account Activation
+    /users/activate:
+        get:
+            tags:
+                - Account Activation
+            summary: Activate user account
+            description: Activate user account using activation token
+            parameters:
+                - name: token
+                  in: query
+                  required: true
+                  description: Account activation token
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Account activated successfully
+                "400":
+                    description: Invalid or expired token
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+    # Posts Management
+    /posts:
+        get:
+            tags:
+                - Posts
+            summary: List posts
+            description: Retrieve a paginated list of blog posts
+            parameters:
+                - name: page
+                  in: query
+                  description: Page number (default:1)
+                  schema:
+                      type: integer
+                      default: 1
+                - name: limit
+                  in: query
+                  description: Number of posts per page (default:10)
+                  schema:
+                      type: integer
+                      default: 10
+            responses:
+                "200":
+                    description: List of posts retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: "#/components/schemas/PostDTO"
+
+        post:
+            tags:
+                - Posts
+            summary: Create a new post
+            description: Create a new blog post
+            security:
+                - BearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/CreatePostRequest"
+            responses:
+                "201":
+                    description: Post created successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/PostDTO"
+                "400":
+                    description: Invalid input
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "401":
+                    description: User not authenticated
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+    /posts/{id}:
+        get:
+            tags:
+                - Posts
+            summary: Get post by ID
+            description: Retrieve a specific blog post by its ID
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  description: Post ID
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Post retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/PostDTO"
+                "404":
+                    description: Post not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+        put:
+            tags:
+                - Posts
+            summary: Update post
+            description: Update an existing blog post (only by the author)
+            security:
+                - BearerAuth: []
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  description: Post ID
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/CreatePostRequest"
+            responses:
+                "200":
+                    description: Post updated successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/PostDTO"
+                "401":
+                    description: User not authenticated
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "403":
+                    description: You can only update your own posts
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "404":
+                    description: Post not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+        delete:
+            tags:
+                - Posts
+            summary: Delete post
+            description: Delete a blog post (only by the author)
+            security:
+                - BearerAuth: []
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  description: Post ID
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Post deleted successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: "Post deleted successfully"
+                "401":
+                    description: User not authenticated
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "403":
+                    description: You can only delete your own posts
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "404":
+                    description: Post not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+    # Post Interactions
+    /posts/{id}/like:
+        post:
+            tags:
+                - Post Interactions
+            summary: Like a post
+            description: Add a like to the specified post
+            security:
+                - BearerAuth: []
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  description: Post ID
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Post liked successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: "Post liked successfully"
+                "401":
+                    description: User not authenticated
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+        delete:
+            tags:
+                - Post Interactions
+            summary: Unlike a post
+            description: Remove like from the specified post
+            security:
+                - BearerAuth: []
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  description: Post ID
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Post unliked successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: "Post unliked successfully"
+                "401":
+                    description: User not authenticated
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+    /posts/{id}/dislike:
+        post:
+            tags:
+                - Post Interactions
+            summary: Dislike a post
+            description: Add a dislike to the specified post
+            security:
+                - BearerAuth: []
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  description: Post ID
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Post disliked successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: "Post disliked successfully"
+                "401":
+                    description: User not authenticated
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+        delete:
+            tags:
+                - Post Interactions
+            summary: Remove dislike from a post
+            description: Remove dislike from the specified post
+            security:
+                - BearerAuth: []
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  description: Post ID
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Post undisliked successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: "Post undisliked successfully"
+                "401":
+                    description: User not authenticated
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+    /posts/{id}/like-status:
+        get:
+            tags:
+                - Post Interactions
+            summary: Get post like status
+            description: Get the like/dislike status of a post for the authenticated user
+            security:
+                - BearerAuth: []
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  description: Post ID
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Like status retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    post_id:
+                                        type: string
+                                    liked:
+                                        type: boolean
+                                    disliked:
+                                        type: boolean
+                "401":
+                    description: User not authenticated
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+    # Search and Filter
+    /posts/search:
+        get:
+            tags:
+                - Search & Filter
+            summary: Search posts
+            description: Search for posts by title or author
+            parameters:
+                - name: q
+                  in: query
+                  required: true
+                  description: Search query
+                  schema:
+                      type: string
+                - name: type
+                  in: query
+                  description: Search type (title or author, default:title)
+                  schema:
+                      type: string
+                      enum: [title, author]
+                      default: title
+                - name: page
+                  in: query
+                  description: Page number (default:1)
+                  schema:
+                      type: integer
+                      default: 1
+                - name: limit
+                  in: query
+                  description: Number of posts per page (default:10)
+                  schema:
+                      type: integer
+                      default: 10
+            responses:
+                "200":
+                    description: Search results retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    posts:
+                                        type: array
+                                        items:
+                                            $ref: "#/components/schemas/PostDTO"
+                                    count:
+                                        type: integer
+                                    query:
+                                        type: string
+                                    type:
+                                        type: string
+                "400":
+                    description: Search query is required
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+    /posts/filter:
+        get:
+            tags:
+                - Search & Filter
+            summary: Filter posts
+            description: Filter posts by tags or date range
+            parameters:
+                - name: tags
+                  in: query
+                  description: Comma-separated list of tags
+                  schema:
+                      type: string
+                - name: start_date
+                  in: query
+                  description: Start date for filtering (YYYY-MM-DD)
+                  schema:
+                      type: string
+                      format: date
+                - name: end_date
+                  in: query
+                  description: End date for filtering (YYYY-MM-DD)
+                  schema:
+                      type: string
+                      format: date
+                - name: page
+                  in: query
+                  description: Page number (default:1)
+                  schema:
+                      type: integer
+                      default: 1
+                - name: limit
+                  in: query
+                  description: Number of posts per page (default:10)
+                  schema:
+                      type: integer
+                      default: 10
+            responses:
+                "200":
+                    description: Filtered posts retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    posts:
+                                        type: array
+                                        items:
+                                            $ref: "#/components/schemas/PostDTO"
+                                    count:
+                                        type: integer
+                "400":
+                    description: Either tags or date range must be provided
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+    /posts/popular:
+        get:
+            tags:
+                - Statistics
+            summary: Get popular posts
+            description: Retrieve posts ordered by view count
+            parameters:
+                - name: limit
+                  in: query
+                  description: Number of posts to return (max:100, default:10)
+                  schema:
+                      type: integer
+                      maximum: 100
+                      default: 10
+            responses:
+                "200":
+                    description: Popular posts retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    posts:
+                                        type: array
+                                        items:
+                                            $ref: "#/components/schemas/PostDTO"
+                                    count:
+                                        type: integer
+
+    # Statistics
+    /posts/{id}/views:
+        get:
+            tags:
+                - Statistics
+            summary: Get post view count
+            description: Get the view count for a specific post
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  description: Post ID
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: View count retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    post_id:
+                                        type: string
+                                    view_count:
+                                        type: integer
+
+    /stats/views:
+        get:
+            tags:
+                - Statistics
+            summary: Get total view statistics
+            description: Get total view count across all posts
+            responses:
+                "200":
+                    description: View statistics retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    total_views:
+                                        type: integer
+
+    # Admin Operations
+    /admin/users/{id}/promote:
+        patch:
+            tags:
+                - Admin
+            summary: Promote user
+            description: Promote a user to admin role (admin only)
+            security:
+                - BearerAuth: []
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  description: User ID
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: User promoted successfully
+                "401":
+                    description: User not authenticated
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "403":
+                    description: Admin access required
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+    /admin/users/{id}/demote:
+        patch:
+            tags:
+                - Admin
+            summary: Demote user
+            description: Demote a user from admin role (admin only)
+            security:
+                - BearerAuth: []
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  description: User ID
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: User demoted successfully
+                "401":
+                    description: User not authenticated
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "403":
+                    description: Admin access required
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+    # AI Content Generation
+    /ai/generate:
+        post:
+            tags:
+                - AI Content Generation
+            summary: Generate content with AI
+            description: Generate blog content using AI based on provided parameters
+            security:
+                - BearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/ContentRequest"
+            responses:
+                "200":
+                    description: Content generated successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ContentResponse"
+                "400":
+                    description: Invalid input parameters
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "401":
+                    description: User not authenticated
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "422":
+                    description: Content blocked by safety filters
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "504":
+                    description: Processing timeout
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+    schemas:
+        # Authentication Schemas
+        RegisterRequest:
+            type: object
+            required:
+                - username
+                - first_name
+                - last_name
+                - email
+                - password
+            properties:
+                username:
+                    type: string
+                    minLength: 3
+                    maxLength: 50
+                first_name:
+                    type: string
+                    minLength: 1
+                    maxLength: 50
+                last_name:
+                    type: string
+                    minLength: 1
+                    maxLength: 50
+                email:
+                    type: string
+                    format: email
+                password:
+                    type: string
+                    minLength: 6
+                profile:
+                    $ref: "#/components/schemas/UserProfileDTO"
+
+        RegisterResponse:
+            type: object
+            properties:
+                id:
+                    type: string
+
+        LoginRequest:
+            type: object
+            required:
+                - username
+                - password
+            properties:
+                username:
+                    type: string
+                password:
+                    type: string
+
+        LoginResponse:
+            type: object
+            properties:
+                access_token:
+                    type: string
+                refresh_token:
+                    type: string
+
+        # User Profile Schemas
+        SocialLinkDTO:
+            type: object
+            properties:
+                platform:
+                    type: string
+                    example: "twitter"
+                url:
+                    type: string
+                    example: "https://twitter.com/username"
+
+        UserProfileDTO:
+            type: object
+            properties:
+                bio:
+                    type: string
+                    example: "Software developer passionate about blogging"
+                picture_url:
+                    type: string
+                    example: "https://example.com/avatar.jpg"
+                social_links:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/SocialLinkDTO"
+
+        ProfileResponse:
+            type: object
+            properties:
+                bio:
+                    type: string
+                picture_url:
+                    type: string
+                social_links:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/SocialLinkDTO"
+
+        UpdateProfileRequest:
+            type: object
+            properties:
+                bio:
+                    type: string
+                picture_url:
+                    type: string
+                social_links:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/SocialLinkDTO"
+
+        # Password Reset Schemas
+        ForgotPasswordRequest:
+            type: object
+            required:
+                - email
+            properties:
+                email:
+                    type: string
+                    format: email
+
+        ResetPasswordRequest:
+            type: object
+            required:
+                - token
+                - new_password
+            properties:
+                token:
+                    type: string
+                new_password:
+                    type: string
+                    minLength: 6
+
+        # Post Schemas
+        CreatePostRequest:
+            type: object
+            required:
+                - title
+                - content
+            properties:
+                title:
+                    type: string
+                    minLength: 1
+                content:
+                    type: string
+                    minLength: 1
+                tags:
+                    type: array
+                    items:
+                        type: string
+
+        PostDTO:
+            type: object
+            properties:
+                id:
+                    type: string
+                title:
+                    type: string
+                content:
+                    type: string
+                author_id:
+                    type: string
+                tags:
+                    type: array
+                    items:
+                        type: string
+                view_count:
+                    type: integer
+                likes:
+                    type: array
+                    items:
+                        type: string
+                dislikes:
+                    type: array
+                    items:
+                        type: string
+                created_at:
+                    type: string
+                    format: date-time
+                updated_at:
+                    type: string
+                    format: date-time
+
+        # AI Content Generation Schemas
+        ContentRequest:
+            type: object
+            required:
+                - topic
+                - word_count
+                - audience
+            properties:
+                topic:
+                    type: string
+                    minLength: 3
+                    maxLength: 100
+                    example: "Introduction to machine learning algorithms"
+                tone:
+                    type: string
+                    enum: [professional, casual, persuasive]
+                    default: professional
+                word_count:
+                    type: integer
+                    minimum: 10
+                    maximum: 300
+                    example: 250
+                audience:
+                    type: array
+                    items:
+                        type: string
+                        enum: [general, developers, marketers]
+                    example: ["developers"]
+                scope:
+                    type: string
+                    maxLength: 500
+                    example: "Focus on beginner-friendly explanations"
+
+        ContentResponse:
+            type: object
+            properties:
+                title:
+                    type: string
+                    minLength: 10
+                    maxLength: 80
+                meta_description:
+                    type: string
+                    maxLength: 155
+                outline:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/Section"
+                body:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/BodySection"
+                enhancements:
+                    $ref: "#/components/schemas/Enhancements"
+                safety_report:
+                    $ref: "#/components/schemas/SafetyReport"
+                word_count:
+                    type: integer
+                    minimum: 300
+
+        Section:
+            type: object
+            properties:
+                heading:
+                    type: string
+                    minLength: 5
+                    maxLength: 120
+                key_points:
+                    type: array
+                    items:
+                        type: string
+                        minLength: 10
+                        maxLength: 150
+                    minItems: 1
+                    maxItems: 4
+
+        BodySection:
+            type: object
+            properties:
+                heading:
+                    type: string
+                    minLength: 5
+                    maxLength: 120
+                paragraphs:
+                    type: array
+                    items:
+                        type: string
+                        minLength: 50
+                        maxLength: 300
+                    minItems: 2
+                    maxItems: 4
+                h3s:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/Subsection"
+
+        Subsection:
+            type: object
+            properties:
+                subheading:
+                    type: string
+                    minLength: 5
+                    maxLength: 80
+                bullets:
+                    type: array
+                    items:
+                        type: string
+                        minLength: 10
+                        maxLength: 120
+                    minItems: 1
+                    maxItems: 5
+
+        Enhancements:
+            type: object
+            properties:
+                seo_keywords:
+                    type: array
+                    items:
+                        type: string
+                        minLength: 2
+                        maxLength: 30
+                    minItems: 5
+                    maxItems: 12
+                content_gaps:
+                    type: array
+                    items:
+                        type: string
+                        minLength: 10
+                        maxLength: 100
+                    maxItems: 3
+                audience_tips:
+                    type: array
+                    items:
+                        type: string
+                        minLength: 10
+                        maxLength: 120
+                    maxItems: 3
+
+        SafetyReport:
+            type: object
+            properties:
+                blocked:
+                    type: boolean
+                block_reasons:
+                    type: array
+                    items:
+                        type: string
+                    maxItems: 5
+                safe:
+                    type: boolean
+
+        # Error Response Schema
+        ErrorResponse:
+            type: object
+            properties:
+                error:
+                    type: string
+                details:
+                    type: string
+
+    securitySchemes:
+        BearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+
+security:
+    - BearerAuth: []
