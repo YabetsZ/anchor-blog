@@ -198,8 +198,8 @@ Write-Host "`n🎉 High Priority Features Test Complete!" -ForegroundColor Green
 Write-Host "=================================================" -ForegroundColor Green
 
 Write-Host "`n📊 Features Tested:" -ForegroundColor Cyan
-Write-Host "✅ Blog Post CRUD (Create, Read, Update, Delete)" -ForegroundColor Green
-Write-Host "✅ Blog Search (by title and author)" -ForegroundColor Green
-Write-Host "✅ Blog Filtering (by tags and date)" -ForegroundColor Green
-Write-Host "✅ Like/Dislike functionality" -ForegroundColor Green
-Write-Host "✅ User Logout with token invalidation" -ForegroundColor Green
+Write-Host "✓ Blog Post CRUD (Create, Read, Update, Delete)" -ForegroundColor Green
+Write-Host "✓ Blog Search (by title and author)" -ForegroundColor Green
+Write-Host "✓ Blog Filtering (by tags and date)" -ForegroundColor Green
+Write-Host "✓ Like/Dislike functionality" -ForegroundColor Green
+Write-Host "✓ User Logout with token invalidation" -ForegroundColor Green
