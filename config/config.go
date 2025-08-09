@@ -34,12 +34,20 @@ type Config struct {
 	} `mapstructure:"genai"`
 
 	Redis struct {
-		Host             string `mapstructure:"host"`
-		Port             string `mapstructure:"port"`
-		Password         string `mapstructure:"password"`
-		DB               int    `mapstructure:"db"`
-		ViewTrackingTTL  int    `mapstructure:"view_tracking_ttl"`
+		Host            string `mapstructure:"host"`
+		Port            string `mapstructure:"port"`
+		Password        string `mapstructure:"password"`
+		DB              int    `mapstructure:"db"`
+		ViewTrackingTTL int    `mapstructure:"view_tracking_ttl"`
 	} `mapstructure:"redis"`
+
+	OAuth struct {
+		Google struct {
+			ClientID     string `mapstructure:"client_id"`
+			ClientSecret string `mapstructure:"client_secret"`
+			RedirectURI  string `mapstructure:"redirect_uri"`
+		} `mapstructure:"google"`
+	} `mapstructure:"oauth"`
 }
 
 func LoadConfig(path string) (*Config, error) {
