@@ -2,8 +2,6 @@ package middleware
 
 import (
 	"anchor-blog/internal/errors"
-	"log"
-	"strings"
 
 	"anchor-blog/pkg/jwtutil"
 	"net/http"
@@ -19,7 +17,7 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Missing or malformed token"})
 			return
 		}
-		log.Println(authHeader)
+
 		tokenString := authHeader[7:]
 		if tokenString == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{
@@ -28,8 +26,6 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		log.Println("Number of toke segment", len(strings.Split(tokenString, ".")))
-		log.Println(strings.Split(tokenString, "."))
 
 		// Validate the token using JWT utilities
 		claims, err := jwtutil.ValidateToken(tokenString, jwtSecret)
@@ -39,7 +35,6 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 					"error": "Invalid or expired token",
 				})
 			} else {
-				log.Println(err.Error())
 				c.JSON(http.StatusUnauthorized, gin.H{
 					"error": "Token validation failed",
 				})
