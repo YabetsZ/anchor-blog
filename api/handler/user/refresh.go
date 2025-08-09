@@ -31,7 +31,6 @@ func (uh *UserHandler) Refresh(c *gin.Context) {
 
 func (uh *UserHandler) SetLastSeen(c *gin.Context) {
 	userID := c.Param("id")
-	err := uh.UserService.SetLastSeen(c, userID)
 
 	if err := uh.UserService.SetLastSeen(c, userID); err != nil {
 		c.JSON(http.StatusInternalServerError, entities.ErrorResponse{Error: AppError.ErrInternalServer.Error()})

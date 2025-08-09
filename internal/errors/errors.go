@@ -3,7 +3,6 @@ package errors
 import "errors"
 
 var (
-
 	ErrNotFound               = errors.New("not found") // broad sense: the resource in question doesn't exist
 	ErrUserNotFound           = errors.New("user not found")
 	ErrInvalidUserID          = errors.New("invalid user id")
@@ -26,4 +25,5 @@ var (
 	ErrContentBlocked         = errors.New("content blocked by safety filters")
 	ErrPIILeak                = errors.New("potential PII detected")
 	ErrIllegalContent         = errors.New("illegal content request")
+	ErrFailedToParse          = errors.New("failed to parse content")
 )

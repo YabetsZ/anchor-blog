@@ -33,6 +33,13 @@ type UserDTO struct {
 	UserPosts []string       `json:"user_posts"`
 }
 
+type GoogleUserInfo struct {
+	Email          string `json:"email"`
+	FirstName      string `json:"given_name"`
+	LastName       string `json:"family_name"`
+	ProfilePicture string `json:"picture"`
+}
+
 // :::::::::  Mapping functions  ::::::::::
 func EntityToDTO(ue entities.User) UserDTO {
 	socialLinks := make([]SocialLinkDTO, len(ue.Profile.SocialLinks))

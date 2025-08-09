@@ -3,6 +3,7 @@ package api
 import (
 	"anchor-blog/api/handler"
 	"anchor-blog/api/handler/content"
+	"anchor-blog/api/handler/oauth"
 	"anchor-blog/api/handler/post"
 	"anchor-blog/api/handler/user"
 	"anchor-blog/api/middleware"
@@ -12,7 +13,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler *post.PostHandler, activationHandler *handler.ActivationHandler, passwordResetHandler *handler.PasswordResetHandler, contentHandler *content.ContentHandler) *gin.Engine {
+func SetupRouter(cfg *config.Config, userHandler *user.UserHandler,
+	postHandler *post.PostHandler,
+	activationHandler *handler.ActivationHandler,
+	passwordResetHandler *handler.PasswordResetHandler,
+	contentHandler *content.ContentHandler,
+	oauthHandler *oauth.OAuthHandler) *gin.Engine {
+
 	router := gin.Default()
 
 	// Health check endpoint
@@ -31,13 +38,18 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 		public.POST("/user/register", userHandler.Register) // ✔️
 		public.POST("/user/login", userHandler.Login)       // ✔️
 		public.POST("/refresh", userHandler.Refresh)        // ✔️
+		// OAuth routes
+		oauthRoutes := public.Group("/oauth/google")
+		{
+			oauthRoutes.GET("/login", oauthHandler.GoogleLogin)       // ✔️
+			oauthRoutes.GET("/callback", oauthHandler.GoogleCallback) // ✔️
+		}
 
 		// User activation and password reset routes
 		public.GET("/users/activate", activationHandler.ActivateAccount)
 		public.POST("/users/forgot-password", passwordResetHandler.ForgotPassword)
 		public.POST("/users/reset-password", passwordResetHandler.ResetPassword)
 		public.PATCH("/users/last-seen/:id", userHandler.SetLastSeen)
-
 
 		// Post routes
 		public.GET("/posts/:id", postHandler.GetByID)                // ✔️
@@ -67,7 +79,6 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler, postHandler 
 		// Profile routes
 		private.GET("/user/profile", userHandler.GetProfile)
 		private.PUT("/user/profile", userHandler.UpdateProfile)
-
 
 		// Admin routes
 		private.PATCH("/admin/users/:id/promote", middleware.RequireSuperadmin(), userHandler.PromoteUser) // ✔️

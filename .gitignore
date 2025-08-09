@@ -1,3 +1,7 @@
+# Go
+vendor/
+config.dev.yaml
+
 # Binaries
 *.exe
 *.dll
@@ -34,6 +38,3 @@ build/
 .env.local
 .env.production
 
-# Go
-vendor/
-config.dev.yaml

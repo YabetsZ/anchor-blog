@@ -8,6 +8,7 @@ import (
 	"anchor-blog/api"
 	"anchor-blog/api/handler"
 	"anchor-blog/api/handler/content"
+	"anchor-blog/api/handler/oauth"
 	"anchor-blog/api/handler/post"
 	"anchor-blog/api/handler/user"
 	"anchor-blog/config"
@@ -61,6 +62,7 @@ func main() {
 
 	// Initialize repositories
 	userRepository := userrepo.NewUserRepository(userCollection)
+	tokenRepository := tokenrepo.NewMongoTokenRepository(tokenCollection)
 	postRepository := postrepo.NewMongoPostRepository(postCollection)
 	activationTokenRepo := tokenrepo.NewActivationTokenRepository(activationTokenCollection)
 	passwordResetTokenRepo := tokenrepo.NewPasswordResetTokenRepository(passwordResetTokenCollection)
@@ -79,14 +81,17 @@ func main() {
 	}
 
 	// Initialize handlers
-	userHandler := user.NewUserHandler(usersvc.NewUserServices(userrepo.NewUserRepository(userCollection), tokenrepo.NewMongoTokenRepository(tokenCollection), cfg))
+	userHandler := user.NewUserHandler(usersvc.NewUserServices(userRepository, tokenRepository, cfg))
 	postHandler := post.NewPostHandler(postsvc.NewPostService(postRepository), viewTrackingService)
 	activationHandler := handler.NewActivationHandler(activationService)
 	passwordResetHandler := handler.NewPasswordResetHandler(passwordResetService)
 	contentHandler := content.NewContentHandler(contentsvc.NewContentUsecase(gemini.NewGeminiRepo(cfg.GenAI.GeminiAPIKey, cfg.GenAI.GeminiModel)))
 
+	oauth.InitializeGoogleOAuthConfig(cfg)
+	oauthHandler := oauth.NewOAuthHandler(usersvc.NewUserServices(userRepository, tokenRepository, cfg))
+
 	// Start Server
-	router := api.SetupRouter(cfg, userHandler, postHandler, activationHandler, passwordResetHandler, contentHandler)
+	router := api.SetupRouter(cfg, userHandler, postHandler, activationHandler, passwordResetHandler, contentHandler, oauthHandler)
 	log.Printf("🚀 Server is running on port %s\n", cfg.Server.Port)
 	if err := router.Run(":" + cfg.Server.Port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
