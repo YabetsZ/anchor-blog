@@ -81,7 +81,7 @@ func main() {
 	}
 
 	// Initialize handlers
-	userHandler := user.NewUserHandler(usersvc.NewUserServices(userRepository, tokenRepository, cfg))
+	userHandler := user.NewUserHandler(usersvc.NewUserServices(userRepository, tokenRepository, cfg), activationService)
 	postHandler := post.NewPostHandler(postsvc.NewPostService(postRepository), viewTrackingService)
 	activationHandler := handler.NewActivationHandler(activationService)
 	passwordResetHandler := handler.NewPasswordResetHandler(passwordResetService)

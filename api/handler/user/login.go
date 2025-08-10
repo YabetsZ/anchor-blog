@@ -9,11 +9,15 @@ import (
 )
 
 type UserHandler struct {
-	UserService *usersvc.UserServices
+	UserService       *usersvc.UserServices
+	ActivationService *usersvc.ActivationService
 }
 
-func NewUserHandler(us *usersvc.UserServices) *UserHandler {
-	return &UserHandler{UserService: us}
+func NewUserHandler(us *usersvc.UserServices, as *usersvc.ActivationService) *UserHandler {
+	return &UserHandler{
+		UserService:       us,
+		ActivationService: as,
+	}
 }
 
 type LoginRequest struct {
