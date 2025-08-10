@@ -89,3 +89,8 @@ func (us *UserServices) Logout(ctx context.Context, userID string) error {
 	log.Printf("user %s logged out successfully", userID)
 	return nil
 }
+
+// GetUserByID retrieves a user by their ID
+func (us *UserServices) GetUserByID(ctx context.Context, userID string) (*entities.User, error) {
+	return us.userRepo.GetUserByID(ctx, userID)
+}
