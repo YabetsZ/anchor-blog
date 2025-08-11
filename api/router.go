@@ -5,6 +5,7 @@ import (
 	"anchor-blog/api/handler/content"
 	"anchor-blog/api/handler/oauth"
 	"anchor-blog/api/handler/post"
+	"anchor-blog/api/handler/swagger"
 	"anchor-blog/api/handler/user"
 	"anchor-blog/api/middleware"
 	"anchor-blog/config"
@@ -23,7 +24,7 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler,
 	router := gin.Default()
 
 	// Health check endpoint
-	router.GET("/health", func(c *gin.Context) {
+	router.GET("/api/v1/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "OK",
 		})
@@ -59,6 +60,10 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler,
 		public.GET("/posts/filter", postHandler.FilterPosts)         // ✔️
 		public.GET("/posts/:id/views", postHandler.GetPostViewCount) // ✔️
 		public.GET("/stats/views", postHandler.GetViewStats)         // ✔️
+
+		// documentation
+		public.GET("/docs/documentation.yaml", swagger.OpenAPISpecHandler) // ✔️
+		public.GET("/swagger/*any", swagger.SwaggerUIHandler)              // ✔️
 	}
 
 	private := v1.Group("")
