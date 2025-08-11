@@ -3,7 +3,7 @@ package api
 import (
 	"anchor-blog/api/handler"
 	"anchor-blog/api/handler/content"
-	"anchor-blog/api/handler/oauth"
+	g "anchor-blog/api/handler/oauth"
 	"anchor-blog/api/handler/post"
 	"anchor-blog/api/handler/swagger"
 	"anchor-blog/api/handler/user"
@@ -19,7 +19,7 @@ func SetupRouter(cfg *config.Config, userHandler *user.UserHandler,
 	activationHandler *handler.ActivationHandler,
 	passwordResetHandler *handler.PasswordResetHandler,
 	contentHandler *content.ContentHandler,
-	oauthHandler *oauth.OAuthHandler) *gin.Engine {
+	oauthHandler *g.OAuthHandler) *gin.Engine {
 
 	router := gin.Default()
 

@@ -38,33 +38,33 @@ func NewGeminiRepo(apiKey, model string) *GeminiRepo {
 	}
 }
 
-func (r *GeminiRepo) Generate(ctx context.Context, req entities.ContentRequest) (string, error) {
+func (r *GeminiRepo) Generate(ctx context.Context, req entities.ContentRequest) (string, string, error) {
 	prompt := r.buildPrompt(req)
 	if prompt == "" {
-		return "", errors.New("empty prompt generated")
+		return "", "", errors.New("empty prompt generated")
 	}
 
 	payload := r.createPayload(prompt)
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return "", fmt.Errorf("payload marshaling failed: %w", err)
+		return "", "", fmt.Errorf("payload marshaling failed: %w", err)
 	}
 
 	respBody, err := r.executeAPIRequest(ctx, body)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	// Parse and extract the Markdown content
-	markdown, err := r.extractMarkdownResponse(respBody)
+	// Parse and extract the title and Markdown content
+	title, markdown, err := r.extractMarkdownResponse(respBody)
 	if err != nil {
-		return "", fmt.Errorf("failed to extract markdown: %w", err)
+		return "", "", fmt.Errorf("failed to extract markdown: %w", err)
 	}
 
-	return markdown, nil
+	return title, markdown, nil
 }
 
-func (r *GeminiRepo) extractMarkdownResponse(respBody []byte) (string, error) {
+func (r *GeminiRepo) extractMarkdownResponse(respBody []byte) (string, string, error) {
 	// Define response structure to extract the text part
 	type apiCandidate struct {
 		Content struct {
@@ -85,25 +85,62 @@ func (r *GeminiRepo) extractMarkdownResponse(respBody []byte) (string, error) {
 	// Parse the outer API response
 	var apiResp apiResponse
 	if err := json.Unmarshal(respBody, &apiResp); err != nil {
-		return "", fmt.Errorf("API response parsing failed: %w", err)
+		return "", "", fmt.Errorf("API response parsing failed: %w", err)
 	}
 
 	if len(apiResp.Candidates) == 0 {
-		return "", AppError.ErrContentBlocked
+		return "", "", AppError.ErrContentBlocked
 	}
 
 	candidate := apiResp.Candidates[0]
 	if len(candidate.Content.Parts) == 0 {
-		return "", errors.New("empty content parts in API response")
+		return "", "", errors.New("empty content parts in API response")
 	}
 
 	// Check safety violations
 	if blocked, reasons := r.checkSafetyViolations(candidate.SafetyRatings); blocked {
-		return "", fmt.Errorf("%w: %v", AppError.ErrContentBlocked, strings.Join(reasons, ", "))
+		return "", "", fmt.Errorf("%w: %v", AppError.ErrContentBlocked, strings.Join(reasons, ", "))
 	}
 
-	// Return the raw Markdown content
-	return candidate.Content.Parts[0].Text, nil
+	// Get the full markdown content
+	fullContent := candidate.Content.Parts[0].Text
+
+	// Parse title and body
+	title, body, err := r.parseMarkdownTitleAndBody(fullContent)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to parse markdown: %w", err)
+	}
+
+	return title, body, nil
+}
+
+func (r *GeminiRepo) parseMarkdownTitleAndBody(content string) (string, string, error) {
+	// Split into lines
+	lines := strings.Split(content, "\n")
+
+	// Find the first line that starts with # (h1 header)
+	var titleLine string
+	for _, line := range lines {
+		if strings.HasPrefix(line, "# ") {
+			titleLine = strings.TrimPrefix(line, "# ")
+			titleLine = strings.TrimSpace(titleLine)
+			break
+		}
+	}
+
+	if titleLine == "" {
+		return "", "", errors.New("no title found in markdown content")
+	}
+
+	// The body is everything after the title line
+	bodyStart := strings.Index(content, titleLine) + len(titleLine)
+	if bodyStart >= len(content) {
+		return titleLine, "", nil
+	}
+
+	body := strings.TrimSpace(content[bodyStart:])
+
+	return titleLine, body, nil
 }
 
 func sanitize(s string, maxLen int) string {

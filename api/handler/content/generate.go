@@ -43,7 +43,7 @@ func (h *ContentHandler) GenerateContent(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.uc.GenerateContent(c.Request.Context(), req)
+	title, content, err := h.uc.GenerateContent(c.Request.Context(), req)
 	if err != nil {
 		log.Println(err.Error())
 		handleServiceError(c, err)
@@ -54,7 +54,7 @@ func (h *ContentHandler) GenerateContent(c *gin.Context) {
 	c.Header("X-Content-Type-Options", "nosniff")
 	c.Header("X-Frame-Options", "DENY")
 
-	c.JSON(http.StatusOK, resp)
+	c.JSON(http.StatusOK, gin.H{"title": title, "content": content})
 }
 
 func handleServiceError(c *gin.Context, err error) {

@@ -1,4 +1,4 @@
-package oauth
+package g
 
 import (
 	"anchor-blog/api/handler"
