@@ -5,7 +5,7 @@ info:
     version: 1.0.0
     contact:
         name: Anchor Blog Team
-        email: support@anchorblog.com
+        email: yabets.zekaryas@a2sv.org
     license:
         name: MIT
         url: https://opensource.org/licenses/MIT
@@ -21,6 +21,8 @@ tags:
       description: System health check
     - name: Authentication
       description: User authentication and authorization
+    - name: OAuth
+      description: Third-party OAuth flows
     - name: User Management
       description: User profile and account management
     - name: Posts
@@ -43,8 +45,7 @@ tags:
 paths:
     /health:
         get:
-            tags:
-                - Health
+            tags: [Health]
             summary: Health check endpoint
             description: Check if the API is running and healthy
             responses:
@@ -62,8 +63,7 @@ paths:
     # Authentication Endpoints
     /user/register:
         post:
-            tags:
-                - Authentication
+            tags: [Authentication]
             summary: Register a new user
             description: Create a new user account
             requestBody:
@@ -88,8 +88,7 @@ paths:
 
     /user/login:
         post:
-            tags:
-                - Authentication
+            tags: [Authentication]
             summary: User login
             description: Authenticate user and return access tokens
             requestBody:
@@ -114,21 +113,17 @@ paths:
 
     /refresh:
         post:
-            tags:
-                - Authentication
+            tags: [Authentication]
             summary: Refresh access token
-            description: Get a new access token using refresh token
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            type: object
-                            properties:
-                                refresh_token:
-                                    type: string
-                            required:
-                                - refresh_token
+            description: Use the refresh token in the Authorization header to obtain new tokens.
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  description: Bearer {refresh_token}
+                  schema:
+                      type: string
+                      example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
             responses:
                 "200":
                     description: Token refreshed successfully
@@ -137,7 +132,7 @@ paths:
                             schema:
                                 $ref: "#/components/schemas/LoginResponse"
                 "401":
-                    description: Invalid refresh token
+                    description: Missing or malformed token, or invalid refresh token
                     content:
                         application/json:
                             schema:
@@ -145,10 +140,9 @@ paths:
 
     /logout:
         post:
-            tags:
-                - Authentication
+            tags: [Authentication]
             summary: User logout
-            description: Invalidate all refresh tokens for the user
+            description: Invalidate all refresh tokens for the authenticated user
             security:
                 - BearerAuth: []
             responses:
@@ -169,11 +163,67 @@ paths:
                             schema:
                                 $ref: "#/components/schemas/ErrorResponse"
 
+    # OAuth (Google)
+    /oauth/google/login:
+        get:
+            tags: [OAuth]
+            summary: Initiate Google OAuth login
+            description: Redirects the user to Google's consent page. Sets a CSRF state cookie and returns a temporary redirect.
+            responses:
+                "307":
+                    description: Redirect to Google OAuth consent page
+                    headers:
+                        Location:
+                            description: Google OAuth consent URL
+                            schema:
+                                type: string
+                "400":
+                    description: Failed to initiate OAuth flow
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+    /oauth/google/callback:
+        get:
+            tags: [OAuth]
+            summary: Google OAuth callback
+            description: Handles Google OAuth response, validates state, exchanges code, and logs the user in.
+            parameters:
+                - name: state
+                  in: query
+                  required: true
+                  schema:
+                      type: string
+                - name: code
+                  in: query
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: OAuth login successful
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/LoginResponse"
+                "400":
+                    description: Invalid state or request
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "500":
+                    description: Failed to exchange code or retrieve user info
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
     # User Profile Management
     /user/profile:
         get:
-            tags:
-                - User Management
+            tags: [User Management]
             summary: Get user profile
             description: Retrieve the authenticated user's profile information
             security:
@@ -196,10 +246,8 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/ErrorResponse"
-
         put:
-            tags:
-                - User Management
+            tags: [User Management]
             summary: Update user profile
             description: Update the authenticated user's profile information
             security:
@@ -232,11 +280,41 @@ paths:
                             schema:
                                 $ref: "#/components/schemas/ErrorResponse"
 
+    # Track last seen
+    /users/last-seen/{id}:
+        patch:
+            tags: [User Management]
+            summary: Update user's last seen
+            description: Update the last seen timestamp for the specified user ID.
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  description: User ID
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Last seen updated
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: "success"
+                "500":
+                    description: Failed to update last seen
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
     # Password Reset
     /users/forgot-password:
         post:
-            tags:
-                - Password Reset
+            tags: [Password Reset]
             summary: Request password reset
             description: Send password reset email to user
             requestBody:
@@ -267,8 +345,7 @@ paths:
 
     /users/reset-password:
         post:
-            tags:
-                - Password Reset
+            tags: [Password Reset]
             summary: Reset password
             description: Reset user password using reset token
             requestBody:
@@ -307,8 +384,7 @@ paths:
     # Account Activation
     /users/activate:
         get:
-            tags:
-                - Account Activation
+            tags: [Account Activation]
             summary: Activate user account
             description: Activate user account using activation token
             parameters:
@@ -321,6 +397,27 @@ paths:
             responses:
                 "200":
                     description: Account activated successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: "Account activated successfully"
+                                    user:
+                                        type: object
+                                        properties:
+                                            id:
+                                                type: string
+                                            username:
+                                                type: string
+                                            email:
+                                                type: string
+                                            activated:
+                                                type: boolean
+                                            role:
+                                                type: string
                 "400":
                     description: Invalid or expired token
                     content:
@@ -331,8 +428,7 @@ paths:
     # Posts Management
     /posts:
         get:
-            tags:
-                - Posts
+            tags: [Posts]
             summary: List posts
             description: Retrieve a paginated list of blog posts
             parameters:
@@ -357,10 +453,8 @@ paths:
                                 type: array
                                 items:
                                     $ref: "#/components/schemas/PostDTO"
-
         post:
-            tags:
-                - Posts
+            tags: [Posts]
             summary: Create a new post
             description: Create a new blog post
             security:
@@ -393,8 +487,7 @@ paths:
 
     /posts/{id}:
         get:
-            tags:
-                - Posts
+            tags: [Posts]
             summary: Get post by ID
             description: Retrieve a specific blog post by its ID
             parameters:
@@ -417,10 +510,8 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/ErrorResponse"
-
         put:
-            tags:
-                - Posts
+            tags: [Posts]
             summary: Update post
             description: Update an existing blog post (only by the author)
             security:
@@ -463,10 +554,8 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/ErrorResponse"
-
         delete:
-            tags:
-                - Posts
+            tags: [Posts]
             summary: Delete post
             description: Delete a blog post (only by the author)
             security:
@@ -511,8 +600,7 @@ paths:
     # Post Interactions
     /posts/{id}/like:
         post:
-            tags:
-                - Post Interactions
+            tags: [Post Interactions]
             summary: Like a post
             description: Add a like to the specified post
             security:
@@ -541,10 +629,8 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/ErrorResponse"
-
         delete:
-            tags:
-                - Post Interactions
+            tags: [Post Interactions]
             summary: Unlike a post
             description: Remove like from the specified post
             security:
@@ -576,8 +662,7 @@ paths:
 
     /posts/{id}/dislike:
         post:
-            tags:
-                - Post Interactions
+            tags: [Post Interactions]
             summary: Dislike a post
             description: Add a dislike to the specified post
             security:
@@ -606,10 +691,8 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/ErrorResponse"
-
         delete:
-            tags:
-                - Post Interactions
+            tags: [Post Interactions]
             summary: Remove dislike from a post
             description: Remove dislike from the specified post
             security:
@@ -641,8 +724,7 @@ paths:
 
     /posts/{id}/like-status:
         get:
-            tags:
-                - Post Interactions
+            tags: [Post Interactions]
             summary: Get post like status
             description: Get the like/dislike status of a post for the authenticated user
             security:
@@ -678,8 +760,7 @@ paths:
     # Search and Filter
     /posts/search:
         get:
-            tags:
-                - Search & Filter
+            tags: [Search & Filter]
             summary: Search posts
             description: Search for posts by title or author
             parameters:
@@ -735,8 +816,7 @@ paths:
 
     /posts/filter:
         get:
-            tags:
-                - Search & Filter
+            tags: [Search & Filter]
             summary: Filter posts
             description: Filter posts by tags or date range
             parameters:
@@ -792,8 +872,7 @@ paths:
 
     /posts/popular:
         get:
-            tags:
-                - Statistics
+            tags: [Statistics]
             summary: Get popular posts
             description: Retrieve posts ordered by view count
             parameters:
@@ -822,8 +901,7 @@ paths:
     # Statistics
     /posts/{id}/views:
         get:
-            tags:
-                - Statistics
+            tags: [Statistics]
             summary: Get post view count
             description: Get the view count for a specific post
             parameters:
@@ -848,8 +926,7 @@ paths:
 
     /stats/views:
         get:
-            tags:
-                - Statistics
+            tags: [Statistics]
             summary: Get total view statistics
             description: Get total view count across all posts
             responses:
@@ -866,10 +943,9 @@ paths:
     # Admin Operations
     /admin/users/{id}/promote:
         patch:
-            tags:
-                - Admin
+            tags: [Admin]
             summary: Promote user
-            description: Promote a user to admin role (admin only)
+            description: Promote a user to admin role (superadmin only)
             security:
                 - BearerAuth: []
             parameters:
@@ -897,10 +973,9 @@ paths:
 
     /admin/users/{id}/demote:
         patch:
-            tags:
-                - Admin
+            tags: [Admin]
             summary: Demote user
-            description: Demote a user from admin role (admin only)
+            description: Demote a user from admin role (superadmin only)
             security:
                 - BearerAuth: []
             parameters:
@@ -929,8 +1004,7 @@ paths:
     # AI Content Generation
     /ai/generate:
         post:
-            tags:
-                - AI Content Generation
+            tags: [AI Content Generation]
             summary: Generate content with AI
             description: Generate blog content using AI based on provided parameters
             security:
@@ -978,12 +1052,7 @@ components:
         # Authentication Schemas
         RegisterRequest:
             type: object
-            required:
-                - username
-                - first_name
-                - last_name
-                - email
-                - password
+            required: [username, first_name, last_name, email, password]
             properties:
                 username:
                     type: string
@@ -1014,9 +1083,7 @@ components:
 
         LoginRequest:
             type: object
-            required:
-                - username
-                - password
+            required: [username, password]
             properties:
                 username:
                     type: string
@@ -1083,8 +1150,7 @@ components:
         # Password Reset Schemas
         ForgotPasswordRequest:
             type: object
-            required:
-                - email
+            required: [email]
             properties:
                 email:
                     type: string
@@ -1092,9 +1158,7 @@ components:
 
         ResetPasswordRequest:
             type: object
-            required:
-                - token
-                - new_password
+            required: [token, new_password]
             properties:
                 token:
                     type: string
@@ -1105,9 +1169,7 @@ components:
         # Post Schemas
         CreatePostRequest:
             type: object
-            required:
-                - title
-                - content
+            required: [title, content]
             properties:
                 title:
                     type: string
@@ -1155,10 +1217,7 @@ components:
         # AI Content Generation Schemas
         ContentRequest:
             type: object
-            required:
-                - topic
-                - word_count
-                - audience
+            required: [topic, word_count, audience]
             properties:
                 topic:
                     type: string
@@ -1316,6 +1375,3 @@ components:
             type: http
             scheme: bearer
             bearerFormat: JWT
-
-security:
-    - BearerAuth: []
