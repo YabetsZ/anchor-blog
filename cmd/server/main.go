@@ -8,7 +8,7 @@ import (
 	"anchor-blog/api"
 	"anchor-blog/api/handler"
 	"anchor-blog/api/handler/content"
-	"anchor-blog/api/handler/oauth"
+	g "anchor-blog/api/handler/oauth"
 	"anchor-blog/api/handler/post"
 	"anchor-blog/api/handler/user"
 	"anchor-blog/config"
@@ -87,8 +87,8 @@ func main() {
 	passwordResetHandler := handler.NewPasswordResetHandler(passwordResetService)
 	contentHandler := content.NewContentHandler(contentsvc.NewContentUsecase(gemini.NewGeminiRepo(cfg.GenAI.GeminiAPIKey, cfg.GenAI.GeminiModel)))
 
-	oauth.InitializeGoogleOAuthConfig(cfg)
-	oauthHandler := oauth.NewOAuthHandler(usersvc.NewUserServices(userRepository, tokenRepository, cfg))
+	g.InitializeGoogleOAuthConfig(cfg)
+	oauthHandler := g.NewOAuthHandler(usersvc.NewUserServices(userRepository, tokenRepository, cfg))
 
 	// Start Server
 	router := api.SetupRouter(cfg, userHandler, postHandler, activationHandler, passwordResetHandler, contentHandler, oauthHandler)
